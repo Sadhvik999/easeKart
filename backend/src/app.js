@@ -13,14 +13,14 @@ app.use(cors({
   credentials: true
 }));
 app.use('/api', router);
+
+app.get('/', (req, res) => {
+  res.send('EaseCart Backend is running');
+});
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
-});
-
-const PORT = process.env.PORT
-app.listen(4000, () => {
-  console.log(`Server running on 4000`)
 });
 
 
