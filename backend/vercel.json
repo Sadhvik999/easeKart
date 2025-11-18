@@ -1,15 +1,10 @@
 {
   "version": 2,
+  "buildCommand": "npm install && npx prisma generate",
   "builds": [
     {
       "src": "src/app.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "node_modules/.prisma/client/**",
-          "prisma/schema.prisma"
-        ]
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -17,5 +12,8 @@
       "src": "/(.*)",
       "dest": "src/app.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
