@@ -1,8 +1,8 @@
 require('dotenv').config()
 const express = require('express');
-const cookieParser = require('cookie-parser'); // add this
-const cors = require('cors'); // optional but recommended
-const router = require('./route/router'); // ensure this path is correct
+const cookieParser = require('cookie-parser');
+const cors = require('cors'); 
+const router = require('./route/router');
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,12 +18,11 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
 });
 
-// If this file starts the server, ensure listen happens here:
-const PORT = process.env.PORT || 4000;
-if (require.main === module) {
-  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-}
+const PORT = process.env.PORT
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`)
+});
+
 
 module.exports = app;
-
 
