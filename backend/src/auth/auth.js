@@ -1,6 +1,5 @@
-const {PrismaClient} = require('@prisma/client');
-const prisma = new PrismaClient();
-const bcrypt = require('bcryptjs');
+const { prisma } = require('../db/dbConfig');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 
@@ -35,7 +34,6 @@ async function signup(req, res, next){
 async function login(req, res, next){
     try{
         const { loginmail, loginPassword } = req.body;
-        // console.log(loginmail)
         if (!loginmail) return res.status(400).json({ message: "Email required" });
         if (!loginPassword) return res.status(400).json({ message: "Password required" });
 
