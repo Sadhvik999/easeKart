@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express');
 const cookieParser = require('cookie-parser'); // add this
 const cors = require('cors'); // optional but recommended
@@ -8,7 +9,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: [`${process.env.FRONTENDURL}`], 
   credentials: true
 }));
 app.use('/api', router);

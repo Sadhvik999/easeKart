@@ -8,7 +8,6 @@ export default function Auth() {
   const [loginPassword, setLoginPassword] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
-  // Toggle between Login and Signup and clear all form fields
   const toggleMode = () => {
     setIsLogin(prev => !prev);
     setName("");
@@ -18,11 +17,12 @@ export default function Auth() {
     setLoginPassword("");
     setLoginmail("");
   }
-
+  const url = import.meta.env.VITE_BACKEND;
   const handleLogin = async (e) => {
+    e.preventDefault()
     console.log("login values before fetch:", { loginmail, loginPassword })
     try {
-      const res = await fetch("http://localhost:4000/api/login", {
+      const res = await fetch(`${url}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
@@ -44,8 +44,9 @@ export default function Auth() {
   }
 
   const handleSignup = async (e) => {
+    e.preventDefault()
     try {
-      const res = await fetch("http://localhost:4000/api/signup", {
+      const res = await fetch(`${url}/api/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
