@@ -11,7 +11,7 @@ export default function Products(){
     useEffect(() => {
         async function fetchProductById(){
             try{
-                const backend = import.meta?.env?.VITE_BACKEND || 'http://localhost:4000'
+                const backend = process.env.NEXT_PUBLIC_BACKEND
                 const res = await fetch(`${backend}/api/getProductById/${id}`)
                 if (!res.ok) {
                     const text = await res.text();

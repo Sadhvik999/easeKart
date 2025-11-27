@@ -18,7 +18,7 @@ export default function Auth() {
     setLoginPassword("");
     setLoginmail("");
   }
-  const url = import.meta.env.VITE_BACKEND;
+  const url = process.env.NEXT_PUBLIC_BACKEND
   const handleLogin = async (e) => {
     e.preventDefault()
     console.log("login values before fetch:", { loginmail, loginPassword })
