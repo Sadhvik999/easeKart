@@ -3,6 +3,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Star, ArrowLeft, Plus, Minus, Heart, Share2, Package, Truck, Shield, Search } from 'lucide-react';
+import { FullScreenLoading } from '../../../components/ui/loading';
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -38,12 +39,40 @@ export default function ProductDetailPage() {
         setQuantity(prev => Math.max(1, prev + delta));
     };
 
+    const handleAddToCart = async () => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND;
+            const res = await fetch(`${backend}/api/cart/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    productId: product.id,
+                    quantity: quantity
+                })
+            });
+
+            if (res.status === 401) {
+                router.push('/auth');
+                return;
+            }
+
+            if (res.ok) {
+                alert('Product added to cart!');
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to add to cart');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred');
+        }
+    };
+
     if (loading) {
-        return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
-            </div>
-        );
+        return <FullScreenLoading />;
     }
 
     if (error) {
@@ -204,7 +233,10 @@ export default function ProductDetailPage() {
 
                             {/* Action Buttons */}
                             <div className='flex gap-4'>
-                                <button className='flex-1 px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all hover:scale-105 flex items-center justify-center gap-2'>
+                                <button
+                                    onClick={handleAddToCart}
+                                    className='flex-1 px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all hover:scale-105 flex items-center justify-center gap-2'
+                                >
                                     <ShoppingCart size={20} />
                                     Add to Cart
                                 </button>

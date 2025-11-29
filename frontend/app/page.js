@@ -1,9 +1,9 @@
 "use client";
-import React from 'react'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { CircleUser, ShoppingCart, Package, Truck, Shield, Star, ArrowRight, Sparkles, TrendingUp, Users, Heart, Search } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { BackgroundGradient } from "../components/ui/background-gradient";
+import { Loading } from "../components/ui/loading";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -11,10 +11,12 @@ export default function LandingPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const backend = process.env.NEXT_PUBLIC_BACKEND;
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchProducts() {
       try {
+        setLoading(true);
         const res = await fetch(`${backend}/api/getAllProducts`);
         const fetchedData = await res.json();
         if (Array.isArray(fetchedData)) {
@@ -22,6 +24,9 @@ export default function LandingPage() {
         }
       } catch (err) {
         console.error("Error fetching products:", err);
+      }
+      finally {
+        setLoading(false);
       }
     }
     fetchProducts();
@@ -55,8 +60,6 @@ export default function LandingPage() {
     }
     fetchCategories();
   }, [])
-
-
 
   return (
     <div className='min-h-screen bg-black text-white font-sans'>
@@ -98,6 +101,9 @@ export default function LandingPage() {
                 className='hover:scale-110 transition-transform'
               >
                 <Search size={24} className="text-gray-300 hover:text-white" />
+              </button>
+              <button onClick={() => router.push('/profile?tab=cart')} className='hover:scale-110 transition-transform'>
+                <ShoppingCart size={24} className="text-gray-300 hover:text-white" />
               </button>
               <button onClick={() => router.push('/profile')} className='hover:scale-110 transition-transform'>
                 <CircleUser size={24} className="text-violet-500" />
@@ -187,23 +193,29 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((item) => (
-              <div key={item.id} onClick={() => router.push(`/products/${item.id}`)} className="cursor-pointer group">
-                <BackgroundGradient className="rounded-3xl bg-zinc-900 p-6 h-full hover:scale-105 transition-transform duration-300">
-                  <div className="relative h-64 w-full rounded-2xl mb-4 overflow-hidden bg-white/5">
-                    <img src={item.imageUrl} alt={item.name} className="w-full h-full group-hover:scale-110 transition-transform duration-500" />
-                  </div>
-                  <div className='space-y-2'>
-                    <h3 className="font-bold text-xl text-white line-clamp-1">{item.name}</h3>
-                    <p className="text-2xl font-bold text-violet-400">₹ {item.price}</p>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                      <span>{item.rating}</span>
-                    </div>
-                  </div>
-                </BackgroundGradient>
+            {loading ? (
+              <div className="col-span-full">
+                <Loading />
               </div>
-            ))}
+            ) : (
+              products.map((item) => (
+                <div key={item.id} onClick={() => router.push(`/products/${item.id}`)} className="cursor-pointer group">
+                  <BackgroundGradient className="rounded-3xl bg-zinc-900 p-6 h-full hover:scale-105 transition-transform duration-300">
+                    <div className="relative h-64 w-full rounded-2xl mb-4 overflow-hidden bg-white/5">
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full group-hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    <div className='space-y-2'>
+                      <h3 className="font-bold text-xl text-white line-clamp-1">{item.name}</h3>
+                      <p className="text-2xl font-bold text-violet-400">₹ {item.price}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                        <span>{item.rating}</span>
+                      </div>
+                    </div>
+                  </BackgroundGradient>
+                </div>
+              ))
+            )}
           </div>
 
           <div className='text-center mt-12'>
@@ -281,4 +293,6 @@ export default function LandingPage() {
       </section>
     </div>
   )
+
 }
+

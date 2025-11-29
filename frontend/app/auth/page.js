@@ -17,17 +17,6 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const toggleMode = () => {
-    setIsLogin(prev => !prev);
-    setName("");
-    setEmail("");
-    setPassword("");
-    setPhone("");
-    setLoginPassword("");
-    setLoginmail("");
-    setConfirmPassword("");
-  };
-
   const url = process.env.NEXT_PUBLIC_BACKEND;
 
   const handleLogin = async (e) => {
@@ -41,9 +30,10 @@ export default function Auth() {
         body: JSON.stringify({ loginmail, loginPassword, email: loginmail, password: loginPassword })
       });
       const data = await res.json();
-      if (data.ok) {
+      if (res.ok) {
+        console.log(data);
         alert(data.message);
-        router.push('/');
+        window.location.href = '/profile';
       } else {
         alert(data.message || "Login failed");
       }
@@ -70,7 +60,7 @@ export default function Auth() {
         body: JSON.stringify({ name, email, phone, password })
       });
       const data = await res.json();
-      if (res.status === 201) {
+      if (res.ok) {
         alert("Signup Successful! Please login.");
         setIsLogin(true);
         setName("");
@@ -120,8 +110,8 @@ export default function Auth() {
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2 px-4 rounded-full font-medium transition-all duration-300 ${isLogin
-                  ? "bg-white text-black shadow-lg"
-                  : "text-gray-400 hover:text-white"
+                ? "bg-white text-black shadow-lg"
+                : "text-gray-400 hover:text-white"
                 }`}
             >
               Login
@@ -129,8 +119,8 @@ export default function Auth() {
             <button
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2 px-4 rounded-full font-medium transition-all duration-300 ${!isLogin
-                  ? "bg-white text-black shadow-lg"
-                  : "text-gray-400 hover:text-white"
+                ? "bg-white text-black shadow-lg"
+                : "text-gray-400 hover:text-white"
                 }`}
             >
               Sign Up

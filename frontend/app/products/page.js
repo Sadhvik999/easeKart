@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingCart, Star, ArrowLeft, Filter, Search, X } from 'lucide-react';
 import { BackgroundGradient } from "../../components/ui/background-gradient";
+import { Loading, FullScreenLoading } from '../../components/ui/loading';
 
 function ProductsContent() {
     const router = useRouter();
@@ -214,11 +215,8 @@ function ProductsContent() {
                         </div>
                     </div>
 
-                    {/* Products Grid */}
                     {loading ? (
-                        <div className='flex items-center justify-center py-20'>
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
-                        </div>
+                        <Loading />
                     ) : (
                         <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -250,11 +248,7 @@ function ProductsContent() {
 
 export default function ProductsPage() {
     return (
-        <Suspense fallback={
-            <div className='min-h-screen bg-black text-white flex items-center justify-center'>
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
-            </div>
-        }>
+        <Suspense fallback={<FullScreenLoading />}>
             <ProductsContent />
         </Suspense>
     );

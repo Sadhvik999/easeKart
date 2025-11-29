@@ -1,16 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { User, Mail, Phone, LogOut, ShoppingCart, CircleUser, ArrowLeft, Package, CreditCard, Calendar, MapPin, ChevronRight, Trash2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { User, Mail, Phone, LogOut, ShoppingCart, CircleUser, ArrowLeft, Package, CreditCard, Calendar, MapPin, ChevronRight, Trash2, Plus, Minus } from 'lucide-react';
+import { FullScreenLoading } from '../../components/ui/loading';
 
 
-export default function ProfilePage() {
+function ProfileContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
+
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('profile');
-    const router = useRouter();
+    const [activeTab, setActiveTab] = useState(tabParam || 'profile');
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [addressForm, setAddressForm] = useState({
+        fullName: '',
+        phone: '',
+        streetLine1: '',
+        streetLine2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
+        isDefault: true
+    });
+
+    useEffect(() => {
+        if (tabParam) {
+            setActiveTab(tabParam);
+        }
+    }, [tabParam]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -58,12 +81,147 @@ export default function ProfilePage() {
         }
     };
 
+    const handleUpdateQuantity = async (itemId, newQuantity) => {
+        if (newQuantity < 1) return;
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/cart/update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ itemId, quantity: newQuantity })
+            });
+
+            if (res.ok) {
+                setUser(prev => ({
+                    ...prev,
+                    cart: {
+                        ...prev.cart,
+                        items: prev.cart.items.map(item =>
+                            item.id === itemId ? { ...item, quantity: newQuantity } : item
+                        )
+                    }
+                }));
+            }
+        } catch (err) {
+            console.error('Error updating quantity:', err);
+        }
+    };
+
+    const handleRemoveItem = async (itemId) => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/cart/remove`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ itemId })
+            });
+
+            if (res.ok) {
+                setUser(prev => ({
+                    ...prev,
+                    cart: {
+                        ...prev.cart,
+                        items: prev.cart.items.filter(item => item.id !== itemId)
+                    }
+                }));
+            }
+        } catch (err) {
+            console.error('Error removing item:', err);
+        }
+    };
+
+    const handleCheckout = async () => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+
+            // 1. Check for addresses
+            const addressRes = await fetch(`${backend}/api/address`, {
+                credentials: 'include'
+            });
+
+            if (!addressRes.ok) {
+                console.error("Failed to fetch addresses:", addressRes.status);
+                if (addressRes.status === 401) {
+                    router.push('/auth');
+                    return;
+                }
+                setShowAddressModal(true);
+                return;
+            }
+
+            const addresses = await addressRes.json();
+            console.log("Fetched addresses:", addresses);
+
+            if (Array.isArray(addresses) && addresses.length > 0) {
+                // User has address, proceed to "payment" and create order
+                // For simplicity, we'll pick the default address or the first one
+                const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
+
+                // Simulate payment processing
+                setLoading(true); // Show loading state
+
+                const orderRes = await fetch(`${backend}/api/order/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ addressId: defaultAddress.id })
+                });
+
+                const orderData = await orderRes.json();
+
+                if (orderRes.ok) {
+                    alert('Order placed successfully!');
+                    // Refresh profile to update cart and orders
+                    window.location.reload();
+                } else {
+                    console.error("Order creation failed:", orderData);
+                    alert(orderData.message || 'Failed to place order.');
+                    setLoading(false);
+                }
+
+            } else {
+                // No address, show address form
+                setShowAddressModal(true);
+            }
+
+        } catch (err) {
+            console.error("Checkout error:", err);
+            alert("An error occurred during checkout.");
+            setLoading(false);
+        }
+    };
+
+    const handleAddressSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/address`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(addressForm)
+            });
+
+            if (res.ok) {
+                setShowAddressModal(false);
+                // Retry checkout automatically
+                handleCheckout();
+            } else {
+                alert("Failed to save address.");
+            }
+        } catch (err) {
+            console.error("Address save error:", err);
+        }
+    };
+
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-black text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
-            </div>
-        );
+        return <FullScreenLoading />;
     }
 
     if (error) {
@@ -222,8 +380,8 @@ export default function ProfilePage() {
                                                     <div>
                                                         <p className="text-sm text-gray-400">Status</p>
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'DELIVERED' ? 'bg-green-500/10 text-green-400' :
-                                                                order.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-400' :
-                                                                    'bg-blue-500/10 text-blue-400'
+                                                            order.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-400' :
+                                                                'bg-blue-500/10 text-blue-400'
                                                             }`}>
                                                             {order.status}
                                                         </span>
@@ -274,21 +432,50 @@ export default function ProfilePage() {
                                                         <p className="text-gray-400 text-sm mb-2 line-clamp-2">{item.product.description}</p>
                                                         <div className="flex items-center gap-4">
                                                             <span className="text-violet-400 font-bold text-lg">${Number(item.unitPrice).toFixed(2)}</span>
-                                                            <span className="text-gray-500 text-sm">Qty: {item.quantity}</span>
+                                                            <div className="flex items-center gap-3 bg-white/5 rounded-full px-3 py-1 border border-white/10">
+                                                                <button
+                                                                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                                                    className="p-1 hover:text-white text-gray-400 transition-colors"
+                                                                    disabled={item.quantity <= 1}
+                                                                >
+                                                                    <Minus size={14} />
+                                                                </button>
+                                                                <span className="text-white font-medium text-sm w-4 text-center">{item.quantity}</span>
+                                                                <button
+                                                                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                                                    className="p-1 hover:text-white text-gray-400 transition-colors"
+                                                                >
+                                                                    <Plus size={14} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <button className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                                    <button
+                                                        onClick={() => handleRemoveItem(item.id)}
+                                                        className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                                    >
                                                         <Trash2 size={20} />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="p-6 bg-white/[0.02] border-t border-white/10 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-gray-400 text-sm">Total Items</p>
-                                                <p className="text-white font-bold text-xl">{user.cart.items.reduce((acc, item) => acc + item.quantity, 0)}</p>
+                                        <div className="p-6 bg-white/[0.02] border-t border-white/10">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div>
+                                                    <p className="text-gray-400 text-sm">Total Items</p>
+                                                    <p className="text-white font-bold text-xl">{user.cart.items.reduce((acc, item) => acc + item.quantity, 0)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-gray-400 text-sm">Total Price</p>
+                                                    <p className="text-violet-400 font-bold text-2xl">
+                                                        ₹{user.cart.items.reduce((acc, item) => acc + (Number(item.unitPrice) * item.quantity), 0).toFixed(2)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <button className="px-8 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center gap-2">
+                                            <button
+                                                onClick={()=>handleCheckout()}
+                                                className="w-full py-4 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                            >
                                                 Checkout <ChevronRight size={18} />
                                             </button>
                                         </div>
@@ -308,6 +495,123 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Address Modal */}
+            {showAddressModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold text-white mb-6">Add Delivery Address</h2>
+                        <form onSubmit={handleAddressSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                    value={addressForm.fullName}
+                                    onChange={e => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Phone Number</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                    value={addressForm.phone}
+                                    onChange={e => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Address Line 1</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                    value={addressForm.streetLine1}
+                                    onChange={e => setAddressForm({ ...addressForm, streetLine1: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Address Line 2 (Optional)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                    value={addressForm.streetLine2}
+                                    onChange={e => setAddressForm({ ...addressForm, streetLine2: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">City</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                        value={addressForm.city}
+                                        onChange={e => setAddressForm({ ...addressForm, city: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">State</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                        value={addressForm.state}
+                                        onChange={e => setAddressForm({ ...addressForm, state: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Postal Code</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                        value={addressForm.postalCode}
+                                        onChange={e => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Country</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                        value={addressForm.country}
+                                        onChange={e => setAddressForm({ ...addressForm, country: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddressModal(false)}
+                                    className="flex-1 py-3 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors"
+                                >
+                                    Save Address
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
+    );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense fallback={<FullScreenLoading />}>
+            <ProfileContent />
+        </Suspense>
     );
 }
