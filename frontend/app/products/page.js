@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingCart, Star, ArrowLeft, Filter, Search, X } from 'lucide-react';
 import { BackgroundGradient } from "../../components/ui/background-gradient";
 
-export default function ProductsPage() {
+function ProductsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const categoryParam = searchParams.get('category');
@@ -245,5 +245,17 @@ export default function ProductsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={
+            <div className='min-h-screen bg-black text-white flex items-center justify-center'>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+            </div>
+        }>
+            <ProductsContent />
+        </Suspense>
     );
 }
