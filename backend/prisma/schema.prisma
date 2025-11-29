@@ -7,27 +7,106 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum AddressLabel {
+  HOME
+  WORK
+  OTHER
+}
 
 model Users {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  phone     String   @unique
-  email     String   @unique
+  phone     String    @unique
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  orders    Order[]
+  addresses Address[]
+  cart      Cart?     @relation("UserCart")
 }
-
 
 model Products {
-  id String @id @default(cuid()) @db.Char(25)
-  name String @db.VarChar(255)
-  price Float
-  Category String?
-  imageUrl String @db.Text
-  description String? @db.Text
-  rating Float
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  id          String       @id @default(cuid()) @db.Char(25)
+  name        String       @db.VarChar(255)
+  price       Float
+  Category    String?
+  imageUrl    String       @db.Text
+  description String?      @db.Text
+  tags        String[]
+  rating      Float
+  createdAt   DateTime?    @default(now())
+  updatedAt   DateTime?    @updatedAt
+  cartItems   CartItem[]
+  orderItems  OrderItems[]
 }
 
+model Cart {
+  id        String     @id @default(uuid()) @db.Char(36)
+  userId    Int        @unique
+  user      Users      @relation("UserCart", fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Char(36)
+  cartId    String
+  productId String   @db.Char(25)
+  quantity  Int      @default(1)
+  unitPrice Decimal  @db.Decimal(10, 2)
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Products @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id              String       @id @default(uuid()) @db.Char(36)
+  userId          Int
+  user            Users        @relation(fields: [userId], references: [id])
+  status          OrderStatus  @default(PENDING)
+  totalAmount     Decimal      @db.Decimal(10, 2)
+  addressId       String?      @db.Char(36)
+  address         Address?     @relation(fields: [addressId], references: [id])
+  shippingAddress String?
+  items           OrderItems[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model OrderItems {
+  id        String   @id @default(uuid()) @db.Char(36)
+  orderId   String
+  productId String   @db.Char(25)
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Products @relation(fields: [productId], references: [id])
+}
+
+model Address {
+  id          String       @id @default(uuid()) @db.Char(36)
+  userId      Int
+  user        Users        @relation(fields: [userId], references: [id])
+  label       AddressLabel @default(HOME)
+  fullName    String
+  phone       String
+  streetLine1 String
+  streetLine2 String?
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  isDefault   Boolean      @default(false)
+  orders      Order[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}

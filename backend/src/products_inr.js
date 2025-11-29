@@ -1,7 +1,3 @@
-const prisma_n = require('./db/dbConfig');
-const prisma = prisma_n.prisma;
-
-// Prices converted to INR (1 USD = 83 INR)
 const products = [
   {
     "name": "HP Chromebook 14 inch Laptop, HD Display, Intel Processor N100, 8 GB RAM, 128 GB UFS, Intel UHD Graphics, Chrome OS, Chalkboard Gray, 14a-nf0099nr",
@@ -3413,49 +3409,4 @@ const products = [
   }
 ];
 
-
-
-
-function generateTags(product) {
-  const tags = new Set();
-
-  if (product.Category) {
-    tags.add(product.Category.toLowerCase());
-  }
-
-  const nameWords = product.name.toLowerCase().split(/[\s\-\(\)\/,]+/).filter(w => w.length > 2);
-  nameWords.forEach(w => tags.add(w));
-
-  const description = (product.description || "").toLowerCase();
-
-  if (description.includes("wireless") || product.name.toLowerCase().includes("wireless")) tags.add("wireless");
-  if (description.includes("bluetooth") || product.name.toLowerCase().includes("bluetooth")) tags.add("bluetooth");
-  if (description.includes("gaming") || product.name.toLowerCase().includes("gaming")) tags.add("gaming");
-
-  return Array.from(tags).slice(0, 10);
-}
-
-const productsWithTags = products.map(p => ({
-  ...p,
-  tags: generateTags(p)
-}));
-
-async function seed() {
-  try {
-    console.log("Seeding products with INR prices and tags...");
-    await prisma.products.deleteMany({});
-    console.log("Cleared existing products");
-
-    await prisma.products.createMany({
-      data: productsWithTags
-    });
-
-    console.log("Products seeded successfully with INR prices");
-  } catch (err) {
-    console.error("Error while seeding:", err);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-seed();
+module.exports = { products };

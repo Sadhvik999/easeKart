@@ -2,14 +2,31 @@ const dotenv = require('dotenv');
 const { prisma } = require('./db/dbConfig');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const cors = require('cors'); 
-const  { router } = require('./route/router');
+const cors = require('cors');
+const { router } = require('./route/router');
 const { getAllProducts } = require('./products/product');
 const app = express();
 dotenv.config();
 const FRONTEND_ORIGIN = process.env.FRONTEND_URL || process.env.FRONTENDURL || 'http://localhost:5173';
+
+// Allow multiple origins for development
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  FRONTEND_ORIGIN
+];
+
 app.use(cors({
-  origin: FRONTEND_ORIGIN,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -19,8 +36,6 @@ app.use(cookieParser());
 
 app.use('/api', router);
 
-// Compatibility: expose `/getAllProducts` at the root as well as under `/api`.
-// Some tests/clients may call the shorter path.
 app.get('/getAllProducts', getAllProducts);
 
 app.get('/', (req, res) => {

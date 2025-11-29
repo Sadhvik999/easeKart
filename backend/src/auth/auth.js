@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config()
 
 
-async function signup(req, res, next){
-    try{
+async function signup(req, res, next) {
+    try {
         const { name, email, phone, password } = req.body;
         if (!name) return res.status(400).json({ message: "Name required" });
         if (!email) return res.status(400).json({ message: "Email required" });
@@ -26,18 +26,18 @@ async function signup(req, res, next){
         return res.status(201).json({
             message: "Signup success"
         });
-    }catch(err){
+    } catch (err) {
         next(err);
     }
 }
 
-async function login(req, res, next){
-    try{
+async function login(req, res, next) {
+    try {
         const { loginmail, loginPassword } = req.body;
         if (!loginmail) return res.status(400).json({ message: "Email required" });
         if (!loginPassword) return res.status(400).json({ message: "Password required" });
 
-        const user = await prisma.Users.findUnique({ where: { email:loginmail } });
+        const user = await prisma.Users.findUnique({ where: { email: loginmail } });
         if (!user) return res.status(400).json({ message: "User not found" });
 
         const ok = await bcrypt.compare(loginPassword, user.password);
@@ -56,14 +56,14 @@ async function login(req, res, next){
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
             })
             .json({ message: "Login success" });
-    }catch(err){
+    } catch (err) {
         console.log(err)
         next(err);
     }
 }
 
-async function logout(req, res, next){
-    try{
+async function logout(req, res, next) {
+    try {
         res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -77,9 +77,58 @@ async function logout(req, res, next){
         }
 
         res.json({ message: "Logout success" });
-    }catch(err){
+    } catch (err) {
         next(err);
     }
 }
 
-module.exports = { signup, login, logout }
+async function getProfile(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const cookie = req.cookies.token;
+        // if(!cookie){
+        //     return res.status(401).json({ message: "Unauthorized" });
+        // }
+        const user = await prisma.Users.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+                orders: {
+                    include: {
+                        items: {
+                            include: {
+                                product: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                },
+                cart: {
+                    include: {
+                        items: {
+                            include: {
+                                product: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { signup, login, logout, getProfile }
