@@ -8,18 +8,13 @@ const { getAllProducts } = require('./products/product');
 const app = express();
 dotenv.config();
 const FRONTEND_ORIGIN = process.env.FRONTEND_URL || process.env.FRONTENDURL || 'http://localhost:5173';
-
-// Allow multiple origins for development
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:5173',
+  `${process.env.FRONTEND_URL}`,
   FRONTEND_ORIGIN
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
