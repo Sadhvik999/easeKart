@@ -6,7 +6,7 @@ require('dotenv').config()
 
 async function signup(req, res, next) {
     try {
-        const { name, email, phone, password } = req.body;
+        const { name, email, phone, password, accountType } = req.body;
         if (!name) return res.status(400).json({ message: "Name required" });
         if (!email) return res.status(400).json({ message: "Email required" });
         if (!password) return res.status(400).json({ message: "Password required" });
@@ -19,7 +19,8 @@ async function signup(req, res, next) {
                 name,
                 email,
                 phone,
-                password: hash
+                password: hash,
+                accountType: accountType || 'CUSTOMER'
             }
         });
 
@@ -44,7 +45,7 @@ async function login(req, res, next) {
         if (!ok) return res.status(400).json({ message: "Invalid Password" });
 
         const token = jwt.sign(
-            { id: user.id, email: user.email, name: user.name },
+            { id: user.id, email: user.email, name: user.name, accountType: user.accountType },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -97,6 +98,7 @@ async function getProfile(req, res, next) {
                 name: true,
                 email: true,
                 phone: true,
+                accountType: true,
                 createdAt: true,
                 orders: {
                     include: {
@@ -118,7 +120,8 @@ async function getProfile(req, res, next) {
                             }
                         }
                     }
-                }
+                },
+                products: true
             }
         });
 

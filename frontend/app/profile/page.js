@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { User, Mail, Phone, LogOut, ShoppingCart, CircleUser, ArrowLeft, Package, CreditCard, Calendar, MapPin, ChevronRight, Trash2, Plus, Minus } from 'lucide-react';
+import { User, Mail, Phone, LogOut, ShoppingCart, CircleUser, ArrowLeft, Package, CreditCard, Calendar, MapPin, ChevronRight, Trash2, Plus, Minus, LayoutDashboard, PackagePlus, Store, BarChart3, Bell } from 'lucide-react';
 import { FullScreenLoading } from '../../components/ui/loading';
 
 
@@ -16,6 +16,7 @@ function ProfileContent() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState(tabParam || 'profile');
+    const [notifications, setNotifications] = useState([]);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [addressForm, setAddressForm] = useState({
         fullName: '',
@@ -28,7 +29,89 @@ function ProfileContent() {
         country: '',
         isDefault: true
     });
+    const [productForm, setProductForm] = useState({
+        name: '',
+        price: '',
+        category: '',
+        imageUrl: '',
+        description: '',
+        tags: ''
+    });
 
+    const [editingProduct, setEditingProduct] = useState(null);
+
+    const handleCreateOrUpdateProduct = async (e) => {
+        e.preventDefault();
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const url = editingProduct
+                ? `${backend}/api/products/${editingProduct.id}`
+                : `${backend}/api/products`;
+
+            const method = editingProduct ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    ...productForm,
+                    price: parseFloat(productForm.price),
+                    tags: Array.isArray(productForm.tags) ? productForm.tags : productForm.tags.split(',').map(t => t.trim())
+                })
+            });
+
+            if (res.ok) {
+                alert(`Product ${editingProduct ? 'updated' : 'created'} successfully!`);
+                setProductForm({ name: '', price: '', category: '', imageUrl: '', description: '', tags: '' });
+                setEditingProduct(null);
+                setActiveTab('my-products');
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                alert(data.message || `Failed to ${editingProduct ? 'update' : 'create'} product`);
+            }
+        } catch (err) {
+            console.error(`Error ${editingProduct ? 'updating' : 'creating'} product:`, err);
+            alert(`Error ${editingProduct ? 'updating' : 'creating'} product`);
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        if (!confirm("Are you sure you want to delete this product?")) return;
+
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/products/${productId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (res.ok) {
+                alert("Product deleted successfully");
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                alert(data.message || "Failed to delete product");
+            }
+        } catch (err) {
+            console.error("Error deleting product:", err);
+            alert("Error deleting product");
+        }
+    };
+
+    const startEditing = (product) => {
+        setEditingProduct(product);
+        setProductForm({
+            name: product.name,
+            price: product.price,
+            category: product.Category,
+            imageUrl: product.imageUrl,
+            description: product.description,
+            tags: product.tags ? product.tags.join(', ') : ''
+        });
+        setActiveTab('add-product');
+    };
     useEffect(() => {
         if (tabParam) {
             setActiveTab(tabParam);
@@ -58,6 +141,10 @@ function ProfileContent() {
 
                 const data = await res.json();
                 setUser(data);
+
+                if (data.accountType === 'SELLER') {
+                    fetchNotifications();
+                }
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -67,6 +154,36 @@ function ProfileContent() {
 
         fetchProfile();
     }, [router]);
+
+    const fetchNotifications = async () => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/notifications`, {
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                console.log("Fetched notifications:", data);
+                setNotifications(data);
+            }
+        } catch (err) {
+            console.error("Error fetching notifications:", err);
+        }
+    };
+
+    const markNotificationAsRead = async (id) => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            await fetch(`${backend}/api/notifications/${id}/read`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        } catch (err) {
+            console.error("Error marking notification as read:", err);
+        }
+    };
 
     const handleLogout = async () => {
         try {
@@ -269,32 +386,67 @@ function ProfileContent() {
                     {/* Sidebar / Tabs */}
                     <div className="lg:col-span-3 space-y-2">
                         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-                            <button
-                                onClick={() => setActiveTab('profile')}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                            >
-                                <User size={20} />
-                                <span className="font-medium">Profile</span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('orders')}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'orders' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                            >
-                                <Package size={20} />
-                                <span className="font-medium">Orders</span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('cart')}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'cart' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
-                            >
-                                <ShoppingCart size={20} />
-                                <span className="font-medium">Cart</span>
-                                {user.cart?.items?.length > 0 && (
-                                    <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
-                                        {user.cart.items.length}
-                                    </span>
-                                )}
-                            </button>
+                            {user.accountType === 'SELLER' ? (
+                                <>
+                                    <button
+                                        onClick={() => setActiveTab('dashboard')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <LayoutDashboard size={20} />
+                                        <span className="font-medium">Dashboard</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('my-products')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'my-products' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <Store size={20} />
+                                        <span className="font-medium">My Products</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('add-product')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'add-product' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <PackagePlus size={20} />
+                                        <span className="font-medium">Add Product</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('profile')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <User size={20} />
+                                        <span className="font-medium">Profile</span>
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => setActiveTab('profile')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <User size={20} />
+                                        <span className="font-medium">Profile</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('orders')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'orders' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <Package size={20} />
+                                        <span className="font-medium">Orders</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('cart')}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'cart' ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                                    >
+                                        <ShoppingCart size={20} />
+                                        <span className="font-medium">Cart</span>
+                                        {user.cart?.items?.length > 0 && (
+                                            <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                                                {user.cart.items.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 mt-4">
@@ -322,10 +474,51 @@ function ProfileContent() {
                                         <h2 className="text-3xl font-bold text-white mb-2">{user.name}</h2>
                                         <p className="text-gray-400 mb-4">Member since {new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                            <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 text-sm border border-violet-500/20">Premium Member</span>
+                                            <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 text-sm border border-violet-500/20">
+                                                {user.accountType === 'SELLER' ? 'Seller Account' : 'Premium Member'}
+                                            </span>
                                             <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">Verified</span>
                                         </div>
                                     </div>
+
+                                    {user.accountType === 'SELLER' && (
+                                        <div className="ml-auto relative group">
+                                            <button className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors relative">
+                                                <Bell size={24} className="text-gray-400 group-hover:text-white transition-colors" />
+                                                {notifications.filter(n => !n.read).length > 0 && (
+                                                    <span className="absolute top-2 right-2 h-3 w-3 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>
+                                                )}
+                                            </button>
+
+                                            <div className="absolute right-0 mt-2 w-80 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl overflow-hidden hidden group-hover:block z-50">
+                                                <div className="p-4 border-b border-white/10">
+                                                    <h3 className="text-white font-bold">Notifications</h3>
+                                                </div>
+                                                <div className="max-h-64 overflow-y-auto">
+                                                    {notifications.length > 0 ? (
+                                                        notifications.map(notification => (
+                                                            <div
+                                                                key={notification.id}
+                                                                className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notification.read ? 'bg-white/[0.02]' : ''}`}
+                                                                onClick={() => markNotificationAsRead(notification.id)}
+                                                            >
+                                                                <p className={`text-sm mb-1 ${!notification.read ? 'text-white font-medium' : 'text-gray-400'}`}>
+                                                                    {notification.message}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {new Date(notification.createdAt).toLocaleDateString()}
+                                                                </p>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="p-4 text-center text-gray-500 text-sm">
+                                                            No notifications
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -473,7 +666,7 @@ function ProfileContent() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={()=>handleCheckout()}
+                                                onClick={() => handleCheckout()}
                                                 className="w-full py-4 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                                             >
                                                 Checkout <ChevronRight size={18} />
@@ -492,119 +685,299 @@ function ProfileContent() {
                                 )}
                             </div>
                         )}
+
+                        {activeTab === 'dashboard' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h2 className="text-2xl font-bold text-white mb-6">Seller Dashboard</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="p-3 rounded-xl bg-violet-500/10 text-violet-500">
+                                                <Store size={24} />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-white">Total Products</h3>
+                                        </div>
+                                        <p className="text-3xl font-bold text-white">{user.products?.length || 0}</p>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="p-3 rounded-xl bg-green-500/10 text-green-500">
+                                                <BarChart3 size={24} />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-white">Total Sales</h3>
+                                        </div>
+                                        <p className="text-3xl font-bold text-white">$0.00</p>
+                                        <p className="text-sm text-gray-400 mt-2">Coming soon</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'my-products' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-white">My Products</h2>
+                                    <button onClick={() => {
+                                        setEditingProduct(null);
+                                        setProductForm({ name: '', price: '', category: '', imageUrl: '', description: '', tags: '' });
+                                        setActiveTab('add-product');
+                                    }} className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-2">
+                                        <Plus size={18} /> Add Product
+                                    </button>
+                                </div>
+
+                                {user.products && user.products.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {user.products.map((product) => (
+                                            <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:border-violet-500/30 transition-all group relative">
+                                                <div className="h-48 w-full bg-black/20 relative">
+                                                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="p-6">
+                                                    <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+                                                    <p className="text-violet-400 font-bold text-lg mb-4">${product.price}</p>
+                                                    <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                                                        <span>{product.Category}</span>
+                                                        <span>Rating: {product.rating}</span>
+                                                    </div>
+                                                    <div className="flex gap-3 mt-4">
+                                                        {console.log("Rendering product:", product.name)}
+                                                        <button onClick={() => startEditing(product)} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold z-10">
+                                                            Edit
+                                                        </button>
+                                                        <button onClick={() => handleDeleteProduct(product.id)} className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold z-10">
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
+                                        <Package size={48} className="mx-auto text-gray-600 mb-4" />
+                                        <h3 className="text-xl font-bold text-white mb-2">No products yet</h3>
+                                        <p className="text-gray-400 mb-6">Start selling by adding your first product.</p>
+                                        <button onClick={() => setActiveTab('add-product')} className="px-6 py-2 bg-violet-500 text-white rounded-full font-medium hover:bg-violet-600 transition-colors">
+                                            Add Product
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'add-product' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h2 className="text-2xl font-bold text-white mb-6">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                                <form onSubmit={handleCreateOrUpdateProduct} className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">Product Name</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                value={productForm.name}
+                                                onChange={e => setProductForm({ ...productForm, name: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">Price</label>
+                                            <input
+                                                type="number"
+                                                required
+                                                step="0.01"
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                value={productForm.price}
+                                                onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">Category</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                value={productForm.category}
+                                                onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">Image URL</label>
+                                            <input
+                                                type="url"
+                                                required
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                value={productForm.imageUrl}
+                                                onChange={e => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-2">Description</label>
+                                        <textarea
+                                            required
+                                            rows={4}
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={productForm.description}
+                                            onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-2">Tags (comma separated)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="electronics, gadget, new"
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={productForm.tags}
+                                            onChange={e => setProductForm({ ...productForm, tags: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="pt-4 flex gap-4">
+                                        <button
+                                            type="submit"
+                                            className="flex-1 py-4 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/25"
+                                        >
+                                            {editingProduct ? 'Update Product' : 'Create Product'}
+                                        </button>
+                                        {editingProduct && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditingProduct(null);
+                                                    setProductForm({ name: '', price: '', category: '', imageUrl: '', description: '', tags: '' });
+                                                    setActiveTab('my-products');
+                                                }}
+                                                className="px-8 py-4 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Address Modal */}
-            {showAddressModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold text-white mb-6">Add Delivery Address</h2>
-                        <form onSubmit={handleAddressSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-1">Full Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                    value={addressForm.fullName}
-                                    onChange={e => setAddressForm({ ...addressForm, fullName: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-1">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                    value={addressForm.phone}
-                                    onChange={e => setAddressForm({ ...addressForm, phone: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-1">Address Line 1</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                    value={addressForm.streetLine1}
-                                    onChange={e => setAddressForm({ ...addressForm, streetLine1: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-gray-400 mb-1">Address Line 2 (Optional)</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                    value={addressForm.streetLine2}
-                                    onChange={e => setAddressForm({ ...addressForm, streetLine2: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+            {
+                showAddressModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            <h2 className="text-2xl font-bold text-white mb-6">Add Delivery Address</h2>
+                            <form onSubmit={handleAddressSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">City</label>
+                                    <label className="block text-sm text-gray-400 mb-1">Full Name</label>
                                     <input
                                         type="text"
                                         required
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                        value={addressForm.city}
-                                        onChange={e => setAddressForm({ ...addressForm, city: e.target.value })}
+                                        value={addressForm.fullName}
+                                        onChange={e => setAddressForm({ ...addressForm, fullName: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">State</label>
+                                    <label className="block text-sm text-gray-400 mb-1">Phone Number</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                        value={addressForm.phone}
+                                        onChange={e => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Address Line 1</label>
                                     <input
                                         type="text"
                                         required
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                        value={addressForm.state}
-                                        onChange={e => setAddressForm({ ...addressForm, state: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Postal Code</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                        value={addressForm.postalCode}
-                                        onChange={e => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                                        value={addressForm.streetLine1}
+                                        onChange={e => setAddressForm({ ...addressForm, streetLine1: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Country</label>
+                                    <label className="block text-sm text-gray-400 mb-1">Address Line 2 (Optional)</label>
                                     <input
                                         type="text"
-                                        required
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
-                                        value={addressForm.country}
-                                        onChange={e => setAddressForm({ ...addressForm, country: e.target.value })}
+                                        value={addressForm.streetLine2}
+                                        onChange={e => setAddressForm({ ...addressForm, streetLine2: e.target.value })}
                                     />
                                 </div>
-                            </div>
-                            <div className="flex gap-4 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddressModal(false)}
-                                    className="flex-1 py-3 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors"
-                                >
-                                    Save Address
-                                </button>
-                            </div>
-                        </form>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">City</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={addressForm.city}
+                                            onChange={e => setAddressForm({ ...addressForm, city: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">State</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={addressForm.state}
+                                            onChange={e => setAddressForm({ ...addressForm, state: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Postal Code</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={addressForm.postalCode}
+                                            onChange={e => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Country</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                            value={addressForm.country}
+                                            onChange={e => setAddressForm({ ...addressForm, country: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddressModal(false)}
+                                        className="flex-1 py-3 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors"
+                                    >
+                                        Save Address
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 

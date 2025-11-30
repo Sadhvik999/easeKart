@@ -8,8 +8,6 @@ const createOrder = async (req, res) => {
         if (!addressId) {
             return res.status(400).json({ message: "Address ID is required" });
         }
-
-        // Get user's cart
         const cart = await prisma.cart.findUnique({
             where: { userId: userId },
             include: {
@@ -22,13 +20,9 @@ const createOrder = async (req, res) => {
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({ message: "Cart is empty" });
         }
-
-        // Calculate total amount
         const totalAmount = cart.items.reduce((acc, item) => {
             return acc + (Number(item.unitPrice) * item.quantity);
         }, 0);
-
-        // Get address details for snapshot
         const address = await prisma.address.findUnique({
             where: { id: addressId }
         });
@@ -43,11 +37,10 @@ const createOrder = async (req, res) => {
         console.log("Address ID:", addressId);
         console.log("Total Amount:", totalAmount);
 
-        // Create Order
         const order = await prisma.order.create({
             data: {
                 userId: userId,
-                status: 'PROCESSING', // Simulating payment success immediately
+                status: 'PROCESSING',
                 totalAmount: totalAmount,
                 addressId: addressId,
                 shippingAddress: shippingAddress,
@@ -62,7 +55,28 @@ const createOrder = async (req, res) => {
         });
         console.log("Order created:", order.id);
 
-        // Clear Cart
+        const sellerNotifications = {};
+
+        for (const item of cart.items) {
+            if (item.product.sellerId) {
+                if (!sellerNotifications[item.product.sellerId]) {
+                    sellerNotifications[item.product.sellerId] = [];
+                }
+                sellerNotifications[item.product.sellerId].push(`${item.product.name} (x${item.quantity})`);
+            }
+        }
+
+        const notificationPromises = Object.entries(sellerNotifications).map(([sellerId, products]) => {
+            return prisma.notification.create({
+                data: {
+                    userId: parseInt(sellerId),
+                    message: `New order received for: ${products.join(', ')}. Order ID: ${order.id}`,
+                    type: 'ORDER'
+                }
+            });
+        });
+
+        await Promise.all(notificationPromises);
         await prisma.cartItem.deleteMany({
             where: { cartId: cart.id }
         });

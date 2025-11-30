@@ -289,10 +289,17 @@ export default function Auth() {
           )}
 
           {/* Footer */}
-          <div className="mt-6 text-center">
+          {/* Footer */}
+          <div className="mt-6 text-center space-y-4">
+            <p className="text-gray-400 text-sm">
+              Want to sell on easyCart?{" "}
+              <button onClick={() => router.push('/seller/signup')} className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+                Become a Seller
+              </button>
+            </p>
             <button
               onClick={() => router.push('/')}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
+              className="text-sm text-gray-500 hover:text-white transition-colors"
             >
               ← Back to Home
             </button>

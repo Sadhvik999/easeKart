@@ -21,17 +21,36 @@ enum AddressLabel {
   OTHER
 }
 
+enum AccountType {
+  SELLER
+  ADMIN
+  CUSTOMER
+}
+
 model Users {
-  id        Int       @id @default(autoincrement())
-  name      String
-  phone     String    @unique
-  email     String    @unique
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  orders    Order[]
-  addresses Address[]
-  cart      Cart?     @relation("UserCart")
+  id            Int            @id @default(autoincrement())
+  name          String
+  phone         String         @unique
+  email         String         @unique
+  password      String
+  accountType   AccountType    @default(CUSTOMER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        Order[]
+  addresses     Address[]
+  cart          Cart?          @relation("UserCart")
+  products      Products[]     @relation("SellerProducts")
+  notifications Notification[]
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    Int
+  user      Users    @relation(fields: [userId], references: [id])
+  message   String
+  read      Boolean  @default(false)
+  type      String   @default("INFO")
+  createdAt DateTime @default(now())
 }
 
 model Products {
@@ -47,6 +66,9 @@ model Products {
   updatedAt   DateTime?    @updatedAt
   cartItems   CartItem[]
   orderItems  OrderItems[]
+  sellerId    Int?
+  seller      Users?       @relation("SellerProducts", fields: [sellerId], references: [id])
+  isDeleted   Boolean      @default(false)
 }
 
 model Cart {

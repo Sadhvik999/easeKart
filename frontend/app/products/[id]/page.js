@@ -14,6 +14,26 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [searchOpen, setSearchOpen] = useState(false);
 
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        async function fetchUser() {
+            try {
+                const backend = process.env.NEXT_PUBLIC_BACKEND;
+                const res = await fetch(`${backend}/api/profile`, {
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data);
+                }
+            } catch (err) {
+                console.error("Error fetching user:", err);
+            }
+        }
+        fetchUser();
+    }, []);
+
     useEffect(() => {
         async function fetchProductById() {
             try {
@@ -40,6 +60,11 @@ export default function ProductDetailPage() {
     };
 
     const handleAddToCart = async () => {
+        if (user?.accountType === 'SELLER') {
+            alert("Sellers cannot buy products.");
+            return;
+        }
+
         try {
             const backend = process.env.NEXT_PUBLIC_BACKEND;
             const res = await fetch(`${backend}/api/cart/add`, {
@@ -217,14 +242,22 @@ export default function ProductDetailPage() {
                                 <div className='flex items-center gap-4'>
                                     <button
                                         onClick={() => handleQuantityChange(-1)}
-                                        className='h-12 w-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center'
+                                        disabled={user?.accountType === 'SELLER'}
+                                        className={`h-12 w-12 rounded-full border border-white/10 flex items-center justify-center transition-colors ${user?.accountType === 'SELLER'
+                                                ? 'bg-white/5 opacity-50 cursor-not-allowed'
+                                                : 'bg-white/5 hover:bg-white/10'
+                                            }`}
                                     >
                                         <Minus size={20} />
                                     </button>
                                     <span className='text-2xl font-bold w-12 text-center'>{quantity}</span>
                                     <button
                                         onClick={() => handleQuantityChange(1)}
-                                        className='h-12 w-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center'
+                                        disabled={user?.accountType === 'SELLER'}
+                                        className={`h-12 w-12 rounded-full border border-white/10 flex items-center justify-center transition-colors ${user?.accountType === 'SELLER'
+                                                ? 'bg-white/5 opacity-50 cursor-not-allowed'
+                                                : 'bg-white/5 hover:bg-white/10'
+                                            }`}
                                     >
                                         <Plus size={20} />
                                     </button>
@@ -235,10 +268,14 @@ export default function ProductDetailPage() {
                             <div className='flex gap-4'>
                                 <button
                                     onClick={handleAddToCart}
-                                    className='flex-1 px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all hover:scale-105 flex items-center justify-center gap-2'
+                                    disabled={user?.accountType === 'SELLER'}
+                                    className={`flex-1 px-8 py-4 font-bold rounded-full transition-all flex items-center justify-center gap-2 ${user?.accountType === 'SELLER'
+                                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-black hover:bg-gray-200 hover:scale-105'
+                                        }`}
                                 >
                                     <ShoppingCart size={20} />
-                                    Add to Cart
+                                    {user?.accountType === 'SELLER' ? 'Sellers Cannot Buy' : 'Add to Cart'}
                                 </button>
                                 <button className='h-14 w-14 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-center'>
                                     <Heart size={20} />

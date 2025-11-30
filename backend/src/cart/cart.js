@@ -9,6 +9,10 @@ const addToCart = async (req, res) => {
             return res.status(400).json({ message: "Product ID and quantity are required" });
         }
 
+        if (req.user.accountType === 'SELLER') {
+            return res.status(403).json({ message: "Sellers cannot add items to cart" });
+        }
+
         // Check if product exists
         const product = await prisma.products.findUnique({
             where: { id: productId }

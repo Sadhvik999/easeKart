@@ -17,10 +17,10 @@ export default function LandingPage() {
     async function fetchProducts() {
       try {
         setLoading(true);
-        const res = await fetch(`${backend}/api/getAllProducts`);
+        const res = await fetch(`${backend}/api/getAllProducts?limit=3`);
         const fetchedData = await res.json();
-        if (Array.isArray(fetchedData)) {
-          setProducts(fetchedData.slice(0, 3));
+        if (fetchedData.products && Array.isArray(fetchedData.products)) {
+          setProducts(fetchedData.products);
         }
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -49,10 +49,11 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const res = await fetch(`${backend}/api/getAllProducts`);
+        const res = await fetch(`${backend}/api/categories`);
         const fetchedData = await res.json();
-        const uniqueCategories = [...new Set(fetchedData.map(product => product.Category))];
-        setCategories(uniqueCategories);
+        if (Array.isArray(fetchedData)) {
+          setCategories(fetchedData);
+        }
 
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -60,7 +61,7 @@ export default function LandingPage() {
     }
     fetchCategories();
   }, [])
-
+  console.log(categories)
   return (
     <div className='min-h-screen bg-black text-white font-sans'>
       {/* Navigation */}
@@ -140,8 +141,8 @@ export default function LandingPage() {
             <button className='px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-all hover:scale-105 shadow-lg shadow-white/20'>
               Explore Collection
             </button>
-            <button className='px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/20' onClick={() => router.push('/about')}>
-              Learn More
+            <button className='px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/20' onClick={() => router.push('/seller/signup')}>
+              Become a Seller
             </button>
           </div>
 
@@ -235,45 +236,40 @@ export default function LandingPage() {
           </div>
 
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
-            {categories?.map((category, index) => {
-              // Count products in this category
-              const productCount = products.filter(p => p.Category === category).length;
+            {categories?.map((category, index) => (
+              <div
+                key={index}
+                onClick={() => router.push(`/products?category=${category.name}`)}
+                className='group cursor-pointer'
+              >
+                <div className='relative overflow-hidden rounded-2xl bg-zinc-900/50 backdrop-blur-sm border border-white/10 p-6 hover:border-violet-500/50 transition-all duration-300 h-full'>
+                  {/* Gradient overlay on hover */}
+                  <div className='absolute inset-0 from-violet-500/0 to-fuchsia-500/0 group-hover:from-violet-500/10 group-hover:to-fuchsia-500/10 transition-all duration-300'></div>
 
-              return (
-                <div
-                  key={index}
-                  onClick={() => router.push(`/products?category=${category}`)}
-                  className='group cursor-pointer'
-                >
-                  <div className='relative overflow-hidden rounded-2xl bg-zinc-900/50 backdrop-blur-sm border border-white/10 p-6 hover:border-violet-500/50 transition-all duration-300 h-full'>
-                    {/* Gradient overlay on hover */}
-                    <div className='absolute inset-0 from-violet-500/0 to-fuchsia-500/0 group-hover:from-violet-500/10 group-hover:to-fuchsia-500/10 transition-all duration-300'></div>
+                  <div className='relative z-10 flex flex-col h-full'>
+                    {/* Icon placeholder */}
+                    <div className='h-12 w-12 rounded-xl from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform'>
+                      <Package size={24} className="text-violet-400" />
+                    </div>
 
-                    <div className='relative z-10 flex flex-col h-full'>
-                      {/* Icon placeholder */}
-                      <div className='h-12 w-12 rounded-xl from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform'>
-                        <Package size={24} className="text-violet-400" />
-                      </div>
+                    {/* Category name */}
+                    <h3 className='text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors'>
+                      {category.name}
+                    </h3>
 
-                      {/* Category name */}
-                      <h3 className='text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors'>
-                        {category}
-                      </h3>
+                    {/* Product count */}
+                    <p className='text-sm text-gray-400 mb-4'>
+                      {category.count} {category.count === 1 ? 'Product' : 'Products'}
+                    </p>
 
-                      {/* Product count */}
-                      <p className='text-sm text-gray-400 mb-4'>
-                        {productCount} {productCount === 1 ? 'Product' : 'Products'}
-                      </p>
-
-                      {/* Arrow indicator */}
-                      <div className='mt-auto flex items-center text-sm text-violet-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity'>
-                        Browse <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                      </div>
+                    {/* Arrow indicator */}
+                    <div className='mt-auto flex items-center text-sm text-violet-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity'>
+                      Browse <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </section>

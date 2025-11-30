@@ -18,24 +18,44 @@ function ProductsContent() {
     const [sortBy, setSortBy] = useState('default');
     const [selectedCategory, setSelectedCategory] = useState(categoryParam || 'all');
     const [searchQuery, setSearchQuery] = useState(searchParam || '');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [categoriesList, setCategoriesList] = useState(['all']);
+
+    // Fetch categories
+    useEffect(() => {
+        async function fetchCategories() {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND}/api/categories`);
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setCategoriesList(['all', ...data.map(c => c.name)]);
+                }
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
+        }
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         async function fetchProducts() {
             setLoading(true);
             try {
                 const backend = process.env.NEXT_PUBLIC_BACKEND;
-                let url = `${backend}/api/getAllProducts`;
+                let url = `${backend}/api/getAllProducts?page=${page}&limit=12`;
 
                 if (searchParam) {
-                    url = `${backend}/api/searchProducts?query=${searchParam}`;
+                    url = `${backend}/api/searchProducts?query=${searchParam}&page=${page}&limit=12`;
                 } else if (categoryParam && categoryParam !== 'all') {
-                    url = `${backend}/api/getProductByCategory/${categoryParam}`;
+                    url = `${backend}/api/getProductByCategory/${categoryParam}?page=${page}&limit=12`;
                 }
 
                 const res = await fetch(url);
                 const fetchedData = await res.json();
-                if (Array.isArray(fetchedData)) {
-                    setProducts(fetchedData);
+                if (fetchedData.products) {
+                    setProducts(fetchedData.products);
+                    setTotalPages(fetchedData.totalPages);
                 }
             } catch (err) {
                 console.error("Error fetching products:", err);
@@ -44,6 +64,11 @@ function ProductsContent() {
             }
         }
         fetchProducts();
+    }, [categoryParam, searchParam, page]);
+
+    // Reset page when category/search changes
+    useEffect(() => {
+        setPage(1);
     }, [categoryParam, searchParam]);
 
     // Update selected category when URL param changes
@@ -86,7 +111,6 @@ function ProductsContent() {
     };
 
     const displayedProducts = sortProducts(products);
-    const categories = ['all', ...new Set(products.map(p => p.Category).filter(Boolean))];
 
     return (
         <div className='min-h-screen bg-black text-white font-sans'>
@@ -193,8 +217,7 @@ function ProductsContent() {
                                     }}
                                     className='bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all cursor-pointer hover:bg-white/10'
                                 >
-                                    <option value="all" className='bg-zinc-900'>All Categories</option>
-                                    {categories.filter(c => c !== 'all').map((category) => (
+                                    {categoriesList.map((category) => (
                                         <option key={category} value={category} className='bg-zinc-900'>
                                             {category}
                                         </option>
@@ -238,6 +261,60 @@ function ProductsContent() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex justify-center mt-12 gap-2">
+                                    <button
+                                        disabled={page === 1}
+                                        onClick={() => setPage(1)}
+                                        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Start
+                                    </button>
+                                    <button
+                                        disabled={page === 1}
+                                        onClick={() => setPage(p => p - 1)}
+                                        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    {(() => {
+                                        const pages = [];
+                                        if (page > 1) pages.push(page - 1);
+                                        pages.push(page);
+                                        if (page < totalPages) pages.push(page + 1);
+                                        if (page + 1 < totalPages) pages.push(page + 2);
+
+                                        return pages.map((p) => (
+                                            <button
+                                                key={p}
+                                                onClick={() => setPage(p)}
+                                                className={`w-10 h-10 rounded-lg transition-colors ${page === p
+                                                    ? 'bg-violet-600 text-white'
+                                                    : 'bg-white/5 hover:bg-white/10 text-gray-400'
+                                                    }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        ));
+                                    })()}
+                                    <button
+                                        disabled={page === totalPages}
+                                        onClick={() => setPage(p => p + 1)}
+                                        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                    <button
+                                        disabled={page === totalPages}
+                                        onClick={() => setPage(totalPages)}
+                                        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        End
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
