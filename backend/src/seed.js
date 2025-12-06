@@ -3485,11 +3485,6 @@ async function ensureSellers() {
 }
 
 async function ensureCustomers() {
-  /* 
-    Ensure Admin User Exists
-    Login: admin@easecart.com
-    Pass: admin123
-  */
   const adminPass = await bcrypt.hash('admin123', 10);
   await prisma.users.upsert({
     where: { email: 'admin@easecart.com' },

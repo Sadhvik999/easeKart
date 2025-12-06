@@ -169,7 +169,6 @@ function ProductsContent() {
                                 </select>
                             </div>
 
-                            {/* Sort Dropdown */}
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
