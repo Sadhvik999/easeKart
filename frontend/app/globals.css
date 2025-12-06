@@ -1,12 +1,30 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+.pause-on-hover:hover {
+  animation-play-state: paused;
+}
+
 /* Removed unsupported at-rule @custom-variant — configure custom variants in tailwind.config.js
    or use standard .dark selectors (e.g., .dark .your-class) or :is(.dark) where needed. */
 
 body {
   background-color: black;
-  color:white;
+  color: white;
 }
 
 :root[data-theme="inline"] {
@@ -121,6 +139,7 @@ body {
     border-color: var(--color-border);
     outline: 2px solid var(--color-ring);
   }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);

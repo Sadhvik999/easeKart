@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { signup, login, logout, getProfile, updateProfile, changePassword } = require('../auth/auth.js');
-const { verifyToken } = require('../auth/middleware.js');
+const { verifyToken, verifyAdmin } = require('../auth/middleware.js');
+const { getAllSellers, getAllCustomers, getAdminProducts, getUserDetails } = require('../admin/admin.js');
 const { getAllProducts, getProductById, getProductByCategory, searchProducts, getCategories, createProduct, updateProduct, deleteProduct, getMyProducts } = require('../products/product.js');
 const { addToCart, getCart, updateCartItem, removeCartItem } = require('../cart/cart.js');
 const { getAddresses, addAddress } = require('../address/address.js');
@@ -43,5 +44,11 @@ router.post('/order/checkout', verifyToken, createOrder);
 const { getNotifications, markAsRead } = require('../notification/notification.js');
 router.get('/notifications', verifyToken, getNotifications);
 router.put('/notifications/:id/read', verifyToken, markAsRead);
+
+// Admin routes
+router.get('/admin/sellers', verifyToken, verifyAdmin, getAllSellers);
+router.get('/admin/customers', verifyToken, verifyAdmin, getAllCustomers);
+router.get('/admin/products', verifyToken, verifyAdmin, getAdminProducts);
+router.get('/admin/users/:id', verifyToken, verifyAdmin, getUserDetails);
 
 module.exports = { router };

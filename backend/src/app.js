@@ -7,10 +7,9 @@ const { router } = require('./route/router');
 const { getAllProducts } = require('./products/product');
 const app = express();
 dotenv.config();
-const FRONTEND_ORIGIN = process.env.FRONTEND_URL || process.env.FRONTENDURL || 'http://localhost:5173';
 const allowedOrigins = [
   `${process.env.FRONTEND_URL}`,
-  FRONTEND_ORIGIN
+  `${process.env.FRONTEND_N_URL}`
 ];
 
 app.use(cors({

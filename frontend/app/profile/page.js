@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { User, Mail, Phone, LogOut, ShoppingCart, CircleUser, ArrowLeft, Package, CreditCard, Calendar, MapPin, ChevronRight, Trash2, Plus, Minus, LayoutDashboard, PackagePlus, Store, BarChart3, Bell } from 'lucide-react';
 import { FullScreenLoading } from '../../components/ui/loading';
+import Navbar from '../../components/Navbar';
 
 
 function ProfileContent() {
@@ -489,24 +490,9 @@ function ProfileContent() {
             <div style={{ backgroundImage: "url('/image.png')", backgroundSize: 'cover', opacity: "0.06", width: "100vw", height: "100vh" }} className='absolute inset-0 bg-cover bg-center z-0 pointer-events-none'></div>
 
             {/* Header */}
-            <div className='relative z-10 flex items-center justify-between px-6 md:px-10 py-4 border-b border-white/10 backdrop-blur-md bg-black/50 sticky top-0'>
-                <div className='cursor-pointer flex items-center gap-2' onClick={() => router.push('/')}>
-                    <ShoppingCart size={24} className="text-violet-500" />
-                    <h1 className='text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500'>easyCart</h1>
-                </div>
-                <div className='hidden md:flex gap-8 text-gray-400 font-medium'>
-                    <a href="/" className="hover:text-white transition-colors">Home</a>
-                    <a href="#" className="hover:text-white transition-colors">Shop</a>
-                    <a href="#" className="hover:text-white transition-colors">Orders</a>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-500 ring-2 ring-violet-500/20">
-                        <span className="font-bold text-lg">{user.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                </div>
-            </div>
+            <Navbar />
 
-            <div className="relative z-10 container mx-auto px-4 py-8 max-w-6xl">
+            <div className="relative z-10 container mx-auto px-4 pt-24 pb-8 max-w-6xl">
                 <button
                     onClick={() => router.back()}
                     className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors group"

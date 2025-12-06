@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
 
@@ -18,6 +18,20 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
 
   const url = process.env.NEXT_PUBLIC_BACKEND;
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${url}/api/profile`, { credentials: 'include' });
+        if (res.ok) {
+          router.push('/');  // Redirect to home if already logged in
+        }
+      } catch (err) {
+        // If error or not logged in, just stay on auth page
+      }
+    };
+    checkAuth();
+  }, [router, url]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

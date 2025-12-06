@@ -3464,7 +3464,7 @@ async function ensureSellers() {
       }
     });
     sellerIds.push(user.id);
-    
+
     await prisma.address.create({
       data: {
         userId: user.id,
@@ -3485,6 +3485,25 @@ async function ensureSellers() {
 }
 
 async function ensureCustomers() {
+  /* 
+    Ensure Admin User Exists
+    Login: admin@easecart.com
+    Pass: admin123
+  */
+  const adminPass = await bcrypt.hash('admin123', 10);
+  await prisma.users.upsert({
+    where: { email: 'admin@easecart.com' },
+    update: {},
+    create: {
+      name: 'Super Admin',
+      email: 'admin@easecart.com',
+      phone: '9999999999',
+      password: adminPass,
+      accountType: 'ADMIN'
+    }
+  });
+  console.log("Admin user ensured: admin@easecart.com / admin123");
+
   const customers = [
     { name: 'Customer One', email: 'customer1@example.com', phone: '8000000001', password: 'customerpass1' },
     { name: 'Customer Two', email: 'customer2@example.com', phone: '8000000002', password: 'customerpass2' },
@@ -3508,7 +3527,7 @@ async function ensureCustomers() {
       }
     });
     customerIds.push(user.id);
-    
+
     // Add address for customer
     await prisma.address.create({
       data: {
@@ -3536,18 +3555,18 @@ async function seed() {
 
     await prisma.products.deleteMany({});
     console.log("Cleared existing products");
-    
+
     const sellerIds = await ensureSellers();
     console.log(`Created ${sellerIds.length} sellers with addresses`);
-    
+
     const customerIds = await ensureCustomers();
     console.log(`Created ${customerIds.length} customers with addresses`);
-    
+
     const productsWithSellers = productsWithTags.map((p, i) => ({
       ...p,
       sellerId: sellerIds[i % sellerIds.length]
     }));
-    
+
     const chunkSize = 200;
     for (let i = 0; i < productsWithSellers.length; i += chunkSize) {
       const chunk = productsWithSellers.slice(i, i + chunkSize);

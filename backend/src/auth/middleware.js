@@ -16,4 +16,12 @@ function verifyToken(req, res, next) {
     }
 }
 
-module.exports = { verifyToken };
+function verifyAdmin(req, res, next) {
+    if (req.user && req.user.accountType === 'ADMIN') {
+        next();
+    } else {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+    }
+}
+
+module.exports = { verifyToken, verifyAdmin };
