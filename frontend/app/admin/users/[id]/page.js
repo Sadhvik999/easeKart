@@ -50,13 +50,10 @@ export default function AdminUserDetailsPage() {
     if (!user) return <div className="min-h-screen bg-black flex items-center justify-center text-white">User not found</div>;
 
     const isCustomer = user.accountType === 'CUSTOMER';
-
-    // Calculate total spend or earnings
     let totalValue = 0;
     if (isCustomer) {
         totalValue = user.orders?.reduce((acc, order) => acc + parseFloat(order.totalAmount || 0), 0) || 0;
     } else {
-        // For sellers: sum of all sold items
         user.products?.forEach(p => {
             p.orderItems?.forEach(item => {
                 totalValue += (parseFloat(item.unitPrice) * item.quantity);
@@ -66,15 +63,8 @@ export default function AdminUserDetailsPage() {
 
     return (
         <div className="min-h-screen bg-black text-white font-sans p-8">
-            <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"
-            >
-                <ArrowLeft size={20} />
-                Back to Dashboard
-            </button>
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"><ArrowLeft size={20} />Back to Dashboard</button>
 
-            {/* Header Card */}
             <div className="bg-zinc-900 border border-white/10 rounded-2xl p-8 mb-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-start gap-6">
@@ -178,7 +168,7 @@ export default function AdminUserDetailsPage() {
                                                 <div className="flex items-center gap-2 text-gray-300 mb-1 font-medium">
                                                     <CreditCard size={14} /> Payment Status
                                                 </div>
-                                                <p>{order.status === 'CANCELLED' ? 'Refunded/Cancelled' : 'Paid'}</p>
+                                                <p>{order.status === 'CANCELLED' ? 'Refunded/Cancelled' : 'Paid (Simulated)'}</p>
                                             </div>
                                         </div>
                                     </div>

@@ -7,20 +7,8 @@ const { router } = require('./route/router');
 const { getAllProducts } = require('./products/product');
 const app = express();
 dotenv.config();
-const allowedOrigins = [
-  `${process.env.FRONTEND_URL}`,
-  `${process.env.FRONTEND_N_URL}`
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [`${process.env.FRONTEND_URL}`, `${process.env.FRONTEND_N_URL}`],
   credentials: true
 }));
 
