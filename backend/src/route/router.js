@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { signup, login, logout, getProfile } = require('../auth/auth.js');
+const { signup, login, logout, getProfile, updateProfile, changePassword } = require('../auth/auth.js');
 const { verifyToken } = require('../auth/middleware.js');
-const { getAllProducts, getProductById, getProductByCategory, searchProducts, getCategories, createProduct, updateProduct, deleteProduct } = require('../products/product.js');
+const { getAllProducts, getProductById, getProductByCategory, searchProducts, getCategories, createProduct, updateProduct, deleteProduct, getMyProducts } = require('../products/product.js');
 const { addToCart, getCart, updateCartItem, removeCartItem } = require('../cart/cart.js');
 const { getAddresses, addAddress } = require('../address/address.js');
 const { createOrder } = require('../order/order.js');
@@ -11,6 +11,8 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
 router.get('/profile', verifyToken, getProfile);
+router.put('/profile', verifyToken, updateProfile);
+router.put('/profile/password', verifyToken, changePassword);
 
 // Database products routes
 router.get('/getAllProducts', getAllProducts);
@@ -18,6 +20,7 @@ router.get('/getProductById/:id', getProductById);
 router.get('/getProductByCategory/:category', getProductByCategory);
 router.get('/searchProducts', searchProducts);
 router.get('/categories', getCategories);
+router.get('/my-products', verifyToken, getMyProducts);
 router.post('/products', verifyToken, createProduct);
 router.put('/products/:id', verifyToken, updateProduct);
 router.delete('/products/:id', verifyToken, deleteProduct);

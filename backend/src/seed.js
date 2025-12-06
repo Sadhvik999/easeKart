@@ -3440,15 +3440,120 @@ const productsWithTags = products.map(p => ({
   tags: generateTags(p)
 }));
 
+const bcrypt = require('bcrypt');
+
+async function ensureSellers() {
+  const sellers = [
+    { name: 'Seller One', email: 'seller1@example.com', phone: '9000000001', password: 'sellerpass1' },
+    { name: 'Seller Two', email: 'seller2@example.com', phone: '9000000002', password: 'sellerpass2' },
+    { name: 'Seller Three', email: 'seller3@example.com', phone: '9000000003', password: 'sellerpass3' }
+  ];
+
+  const sellerIds = [];
+  for (const s of sellers) {
+    const hashed = await bcrypt.hash(s.password, 10);
+    const user = await prisma.users.upsert({
+      where: { email: s.email },
+      update: {},
+      create: {
+        name: s.name,
+        email: s.email,
+        phone: s.phone,
+        password: hashed,
+        accountType: 'SELLER'
+      }
+    });
+    sellerIds.push(user.id);
+    
+    await prisma.address.create({
+      data: {
+        userId: user.id,
+        fullName: s.name,
+        phone: s.phone,
+        streetLine1: `${s.name} Store, 123 Business Street`,
+        streetLine2: 'Suite 100',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        postalCode: '400001',
+        country: 'India',
+        isDefault: true
+      }
+    });
+  }
+
+  return sellerIds;
+}
+
+async function ensureCustomers() {
+  const customers = [
+    { name: 'Customer One', email: 'customer1@example.com', phone: '8000000001', password: 'customerpass1' },
+    { name: 'Customer Two', email: 'customer2@example.com', phone: '8000000002', password: 'customerpass2' },
+    { name: 'Customer Three', email: 'customer3@example.com', phone: '8000000003', password: 'customerpass3' },
+    { name: 'Customer Four', email: 'customer4@example.com', phone: '8000000004', password: 'customerpass4' },
+    { name: 'Customer Five', email: 'customer5@example.com', phone: '8000000005', password: 'customerpass5' }
+  ];
+
+  const customerIds = [];
+  for (const c of customers) {
+    const hashed = await bcrypt.hash(c.password, 10);
+    const user = await prisma.users.upsert({
+      where: { email: c.email },
+      update: {},
+      create: {
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        password: hashed,
+        accountType: 'CUSTOMER'
+      }
+    });
+    customerIds.push(user.id);
+    
+    // Add address for customer
+    await prisma.address.create({
+      data: {
+        userId: user.id,
+        fullName: c.name,
+        phone: c.phone,
+        streetLine1: `${c.name}, 456 Residential Lane`,
+        streetLine2: 'Apt 201',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        postalCode: '560001',
+        country: 'India',
+        isDefault: true
+      }
+    });
+  }
+
+  return customerIds;
+}
+
 async function seed() {
   try {
     console.log("Seeding products with INR prices and tags...");
+    await prisma.$connect();
+
     await prisma.products.deleteMany({});
     console.log("Cleared existing products");
-
-    await prisma.products.createMany({
-      data: productsWithTags
-    });
+    
+    const sellerIds = await ensureSellers();
+    console.log(`Created ${sellerIds.length} sellers with addresses`);
+    
+    const customerIds = await ensureCustomers();
+    console.log(`Created ${customerIds.length} customers with addresses`);
+    
+    const productsWithSellers = productsWithTags.map((p, i) => ({
+      ...p,
+      sellerId: sellerIds[i % sellerIds.length]
+    }));
+    
+    const chunkSize = 200;
+    for (let i = 0; i < productsWithSellers.length; i += chunkSize) {
+      const chunk = productsWithSellers.slice(i, i + chunkSize);
+      await prisma.products.createMany({ data: chunk });
+      console.log(`Inserted products ${i + 1} - ${Math.min(i + chunkSize, productsWithSellers.length)}`);
+    }
 
     console.log("Products seeded successfully with INR prices");
   } catch (err) {

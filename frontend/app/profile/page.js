@@ -38,7 +38,43 @@ function ProfileContent() {
         tags: ''
     });
 
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [profileEditForm, setProfileEditForm] = useState({
+        name: '',
+        email: '',
+        phone: ''
+    });
+    const [passwordForm, setPasswordForm] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [passwordMessage, setPasswordMessage] = useState('');
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+
     const [editingProduct, setEditingProduct] = useState(null);
+    const [sellerProducts, setSellerProducts] = useState([]);
+    const [sellerPage, setSellerPage] = useState(1);
+    const [sellerLimit, setSellerLimit] = useState(6);
+    const [sellerTotalPages, setSellerTotalPages] = useState(1);
+    const [sellerLoading, setSellerLoading] = useState(false);
+    const [sellerTotal, setSellerTotal] = useState(0);
+    const [addresses, setAddresses] = useState([]);
+
+    const fetchAddresses = async () => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/address`, {
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setAddresses(data);
+            }
+        } catch (err) {
+            console.error("Error fetching addresses:", err);
+        }
+    };
 
     const handleCreateOrUpdateProduct = async (e) => {
         e.preventDefault();
@@ -118,6 +154,33 @@ function ProfileContent() {
         }
     }, [tabParam]);
 
+    // Fetch seller products when my-products tab is active
+    useEffect(() => {
+        async function fetchSellerProducts() {
+            if (activeTab !== 'my-products') return;
+            setSellerLoading(true);
+            try {
+                const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+                const res = await fetch(`${backend}/api/my-products?page=${sellerPage}&limit=${sellerLimit}`, { credentials: 'include' });
+                if (!res.ok) {
+                    console.error('Failed to fetch seller products');
+                    setSellerProducts([]);
+                    setSellerTotalPages(1);
+                    return;
+                }
+                const data = await res.json();
+                setSellerProducts(data.products || []);
+                setSellerTotalPages(data.totalPages || 1);
+                setSellerTotal(data.total || 0);
+            } catch (err) {
+                console.error('Error fetching seller products:', err);
+            } finally {
+                setSellerLoading(false);
+            }
+        }
+        fetchSellerProducts();
+    }, [activeTab, sellerPage, sellerLimit]);
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -145,6 +208,7 @@ function ProfileContent() {
                 if (data.accountType === 'SELLER') {
                     fetchNotifications();
                 }
+                fetchAddresses();
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -195,6 +259,71 @@ function ProfileContent() {
             router.push('/auth');
         } catch (err) {
             console.error('Logout failed:', err);
+        }
+    };
+
+    const handleEditProfileClick = () => {
+        setProfileEditForm({
+            name: user.name,
+            email: user.email,
+            phone: user.phone
+        });
+        setIsEditingProfile(true);
+    };
+
+    const handleSaveProfile = async () => {
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(profileEditForm)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUser(prev => ({ ...prev, ...profileEditForm }));
+                setIsEditingProfile(false);
+                alert("Profile updated successfully!");
+            } else {
+                alert("Failed to update profile");
+            }
+        } catch (err) {
+            console.error("Error updating profile:", err);
+            alert("Error updating profile");
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        setPasswordMessage('');
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setPasswordMessage("New passwords do not match");
+            return;
+        }
+        try {
+            const backend = process.env.NEXT_PUBLIC_BACKEND || 'http://localhost:4000';
+            const res = await fetch(`${backend}/api/profile/password`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    oldPassword: passwordForm.oldPassword,
+                    newPassword: passwordForm.newPassword
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setPasswordMessage("Password updated successfully!");
+                setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                alert("Password updated successfully!");
+            } else {
+                setPasswordMessage(data.message || "Failed to update password");
+                alert(data.message || "Failed to update password");
+            }
+        } catch (err) {
+            console.error("Error changing password:", err);
+            setPasswordMessage("Error changing password");
         }
     };
 
@@ -327,8 +456,11 @@ function ProfileContent() {
 
             if (res.ok) {
                 setShowAddressModal(false);
-                // Retry checkout automatically
-                handleCheckout();
+                fetchAddresses();
+                // Retry checkout automatically only if in cart tab
+                if (activeTab === 'cart') {
+                    handleCheckout();
+                }
             } else {
                 alert("Failed to save address.");
             }
@@ -470,8 +602,30 @@ function ProfileContent() {
                                             <span className="text-4xl font-bold text-white">{user.name.charAt(0).toUpperCase()}</span>
                                         </div>
                                     </div>
-                                    <div className="text-center md:text-left">
-                                        <h2 className="text-3xl font-bold text-white mb-2">{user.name}</h2>
+                                    <div className="text-center md:text-left flex-1">
+                                        {isEditingProfile ? (
+                                            <div className="mb-4">
+                                                <input
+                                                    type="text"
+                                                    value={profileEditForm.name}
+                                                    onChange={e => setProfileEditForm({ ...profileEditForm, name: e.target.value })}
+                                                    className="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white text-2xl font-bold focus:border-violet-500 focus:outline-none w-full max-w-sm"
+                                                    placeholder="Your Name"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-4 mb-2">
+                                                <h2 className="text-3xl font-bold text-white">{user.name}</h2>
+                                                <button
+                                                    onClick={handleEditProfileClick}
+                                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                                    title="Edit Profile"
+                                                >
+                                                    <LayoutDashboard size={18} className="rotate-90" />
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <p className="text-gray-400 mb-4">Member since {new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                         <div className="flex flex-wrap justify-center md:justify-start gap-3">
                                             <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 text-sm border border-violet-500/20">
@@ -479,6 +633,23 @@ function ProfileContent() {
                                             </span>
                                             <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">Verified</span>
                                         </div>
+
+                                        {isEditingProfile && (
+                                            <div className="flex gap-3 mt-4">
+                                                <button
+                                                    onClick={handleSaveProfile}
+                                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                                                >
+                                                    Save Changes
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingProfile(false)}
+                                                    className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors font-medium text-sm"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {user.accountType === 'SELLER' && (
@@ -529,7 +700,16 @@ function ProfileContent() {
                                             </div>
                                             <span className="text-sm text-gray-400 uppercase tracking-wider font-medium">Email Address</span>
                                         </div>
-                                        <p className="text-lg text-white pl-12">{user.email}</p>
+                                        {isEditingProfile ? (
+                                            <input
+                                                type="email"
+                                                value={profileEditForm.email}
+                                                onChange={e => setProfileEditForm({ ...profileEditForm, email: e.target.value })}
+                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-violet-500 focus:outline-none"
+                                            />
+                                        ) : (
+                                            <p className="text-lg text-white pl-12">{user.email}</p>
+                                        )}
                                     </div>
 
                                     <div className="p-6 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-colors group">
@@ -539,7 +719,156 @@ function ProfileContent() {
                                             </div>
                                             <span className="text-sm text-gray-400 uppercase tracking-wider font-medium">Phone Number</span>
                                         </div>
-                                        <p className="text-lg text-white pl-12">{user.phone}</p>
+                                        {isEditingProfile ? (
+                                            <input
+                                                type="tel"
+                                                value={profileEditForm.phone}
+                                                onChange={e => setProfileEditForm({ ...profileEditForm, phone: e.target.value })}
+                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-violet-500 focus:outline-none"
+                                            />
+                                        ) : (
+                                            <p className="text-lg text-white pl-12">{user.phone}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Password Change Section */}
+                                <div className="mt-8 pt-8 border-t border-white/10">
+                                    <h3 className="text-xl font-bold text-white mb-6">Security</h3>
+
+                                    {!showPasswordForm ? (
+                                        <div className="flex items-center justify-between p-6 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-colors">
+                                            <div>
+                                                <h4 className="text-lg font-bold text-white">Password</h4>
+                                                <p className="text-gray-400 text-sm">Last changed 3 months ago</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowPasswordForm(true)}
+                                                className="px-4 py-2 bg-white/5 text-white rounded-lg hover:bg-white/10 transition-colors border border-white/10"
+                                            >
+                                                Change Password
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-colors">
+                                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    <div>
+                                                        <label className="block text-sm text-gray-400 mb-2">Current Password</label>
+                                                        <input
+                                                            type="password"
+                                                            value={passwordForm.oldPassword}
+                                                            onChange={e => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                            placeholder="••••••••"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm text-gray-400 mb-2">New Password</label>
+                                                        <input
+                                                            type="password"
+                                                            value={passwordForm.newPassword}
+                                                            onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                            placeholder="••••••••"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm text-gray-400 mb-2">Confirm New Password</label>
+                                                        <input
+                                                            type="password"
+                                                            value={passwordForm.confirmPassword}
+                                                            onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-violet-500 focus:outline-none"
+                                                            placeholder="••••••••"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between mt-4">
+                                                    <p className={`text-sm ${passwordMessage.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
+                                                        {passwordMessage}
+                                                    </p>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setShowPasswordForm(false);
+                                                                setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                                                                setPasswordMessage('');
+                                                            }}
+                                                            className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors font-medium text-sm"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            type="submit"
+                                                            className="px-6 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors font-bold"
+                                                        >
+                                                            Update Password
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Addresses Section */}
+                                <div className="mt-8 pt-8 border-t border-white/10">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-bold text-white">My Addresses</h3>
+                                        <button
+                                            onClick={() => {
+                                                setAddressForm({
+                                                    fullName: user.name || '',
+                                                    phone: user.phone || '',
+                                                    streetLine1: '',
+                                                    streetLine2: '',
+                                                    city: '',
+                                                    state: '',
+                                                    postalCode: '',
+                                                    country: '',
+                                                    isDefault: addresses.length === 0
+                                                });
+                                                setShowAddressModal(true);
+                                            }}
+                                            className="px-4 py-2 bg-violet-500/10 text-violet-400 rounded-xl hover:bg-violet-500 hover:text-white transition-colors flex items-center gap-2 font-medium"
+                                        >
+                                            <Plus size={18} /> Add Address
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {addresses.length > 0 ? (
+                                            addresses.map((addr) => (
+                                                <div key={addr.id} className="p-6 rounded-2xl bg-black/40 border border-white/5 hover:border-violet-500/30 transition-all group relative">
+                                                    {addr.isDefault && (
+                                                        <div className="absolute top-4 right-4">
+                                                            <span className="px-2 py-1 rounded bg-violet-500/20 text-violet-400 text-xs font-medium border border-violet-500/20">Default</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-start gap-4 mb-4">
+                                                        <div className="p-2 rounded-lg bg-white/5 text-gray-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+                                                            <MapPin size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-white font-medium">{addr.fullName}</h4>
+                                                            <p className="text-sm text-gray-500">{addr.phone}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="pl-12 space-y-1 text-gray-400 text-sm">
+                                                        <p>{addr.streetLine1}</p>
+                                                        {addr.streetLine2 && <p>{addr.streetLine2}</p>}
+                                                        <p>{addr.city}, {addr.state} {addr.postalCode}</p>
+                                                        <p>{addr.country}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="col-span-full text-center py-8 text-gray-500 bg-black/20 rounded-2xl border border-white/5 border-dashed">
+                                                No addresses saved yet.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -697,7 +1026,7 @@ function ProfileContent() {
                                             </div>
                                             <h3 className="text-lg font-medium text-white">Total Products</h3>
                                         </div>
-                                        <p className="text-3xl font-bold text-white">{user.products?.length || 0}</p>
+                                        <p className="text-3xl font-bold text-white">{sellerTotal || user.products?.length || 0}</p>
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                                         <div className="flex items-center gap-4 mb-4">
@@ -726,33 +1055,55 @@ function ProfileContent() {
                                     </button>
                                 </div>
 
-                                {user.products && user.products.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {user.products.map((product) => (
-                                            <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:border-violet-500/30 transition-all group relative">
-                                                <div className="h-48 w-full bg-black/20 relative">
-                                                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                                                </div>
-                                                <div className="p-6">
-                                                    <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
-                                                    <p className="text-violet-400 font-bold text-lg mb-4">${product.price}</p>
-                                                    <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
-                                                        <span>{product.Category}</span>
-                                                        <span>Rating: {product.rating}</span>
+                                {sellerLoading ? (
+                                    <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">Loading...</div>
+                                ) : sellerProducts && sellerProducts.length > 0 ? (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {sellerProducts.map((product) => (
+                                                <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:border-violet-500/30 transition-all group relative">
+                                                    <div className="h-48 w-full bg-black/20 relative">
+                                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                                                     </div>
-                                                    <div className="flex gap-3 mt-4">
-                                                        {console.log("Rendering product:", product.name)}
-                                                        <button onClick={() => startEditing(product)} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold z-10">
-                                                            Edit
-                                                        </button>
-                                                        <button onClick={() => handleDeleteProduct(product.id)} className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold z-10">
-                                                            Delete
-                                                        </button>
+                                                    <div className="p-6">
+                                                        <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+                                                        <p className="text-violet-400 font-bold text-lg mb-4">${product.price}</p>
+                                                        <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                                                            <span>{product.Category}</span>
+                                                            <span>Rating: {product.rating}</span>
+                                                        </div>
+                                                        <div className="flex gap-3 mt-4">
+                                                            <button onClick={() => startEditing(product)} className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold z-10">
+                                                                Edit
+                                                            </button>
+                                                            <button onClick={() => handleDeleteProduct(product.id)} className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold z-10">
+                                                                Delete
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Pagination for seller products */}
+                                        {sellerTotalPages > 1 && (
+                                            <div className="flex justify-center mt-8 gap-2">
+                                                <button disabled={sellerPage === 1} onClick={() => setSellerPage(1)} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Start</button>
+                                                <button disabled={sellerPage === 1} onClick={() => setSellerPage(p => p - 1)} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Previous</button>
+                                                {(() => {
+                                                    const pages = [];
+                                                    if (sellerPage > 1) pages.push(sellerPage - 1);
+                                                    pages.push(sellerPage);
+                                                    if (sellerPage < sellerTotalPages) pages.push(sellerPage + 1);
+                                                    return pages.map(p => (
+                                                        <button key={p} onClick={() => setSellerPage(p)} className={`w-10 h-10 rounded-lg transition-colors ${sellerPage === p ? 'bg-violet-600 text-white' : 'bg-white/5 hover:bg-white/10 text-gray-400'}`}>{p}</button>
+                                                    ));
+                                                })()}
+                                                <button disabled={sellerPage === sellerTotalPages} onClick={() => setSellerPage(p => p + 1)} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Next</button>
+                                                <button disabled={sellerPage === sellerTotalPages} onClick={() => setSellerPage(sellerTotalPages)} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">End</button>
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
                                         <Package size={48} className="mx-auto text-gray-600 mb-4" />

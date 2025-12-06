@@ -88,9 +88,9 @@ async function getProfile(req, res, next) {
     try {
         const userId = req.user.id;
         const cookie = req.cookies.token;
-        // if(!cookie){
-        //     return res.status(401).json({ message: "Unauthorized" });
-        // }
+        if (!cookie) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
         const user = await prisma.Users.findUnique({
             where: { id: userId },
             select: {
@@ -124,6 +124,7 @@ async function getProfile(req, res, next) {
                 products: true
             }
         });
+        console.log("Fetched user profile:", user);
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -131,8 +132,58 @@ async function getProfile(req, res, next) {
 
         res.json(user);
     } catch (err) {
+        console.log(err)
         next(err);
     }
 }
 
-module.exports = { signup, login, logout, getProfile }
+async function updateProfile(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const { name, email, phone } = req.body;
+
+        const dataToUpdate = {};
+        if (name) dataToUpdate.name = name;
+        if (email) dataToUpdate.email = email;
+        if (phone) dataToUpdate.phone = phone;
+
+        const updatedUser = await prisma.Users.update({
+            where: { id: userId },
+            data: dataToUpdate,
+            select: { id: true, name: true, email: true, phone: true, accountType: true }
+        });
+
+        res.json({ message: "Profile updated successfully", user: updatedUser });
+    } catch (err) {
+        next(err);
+    }
+}
+
+async function changePassword(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: "Both old and new passwords are required" });
+        }
+
+        const user = await prisma.Users.findUnique({ where: { id: userId } });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Incorrect old password" });
+
+        const hash = await bcrypt.hash(newPassword, 10);
+        await prisma.Users.update({
+            where: { id: userId },
+            data: { password: hash }
+        });
+
+        res.json({ message: "Password updated successfully" });
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { signup, login, logout, getProfile, updateProfile, changePassword }
