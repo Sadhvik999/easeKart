@@ -30,12 +30,10 @@ export default function ProductDetailPage() {
                     const data = await res.json();
                     setUser(data);
 
-                    // improved: fetch cart to check if item exists
                     if (id && data.accountType !== 'SELLER') {
                         const cartRes = await fetch(`${backend}/api/cart`, { credentials: 'include' });
                         if (cartRes.ok) {
                             const cartData = await cartRes.json();
-                            // Check if current product is in items
                             const exists = cartData.items?.some(item => item.product.id === id || item.productId === id);
                             setIsAddedToCart(!!exists);
                         }
@@ -101,7 +99,6 @@ export default function ProductDetailPage() {
             }
 
             if (res.ok) {
-                // success
                 setIsAddedToCart(true);
             } else {
                 const data = await res.json();
@@ -147,15 +144,12 @@ export default function ProductDetailPage() {
 
     return (
         <div className='min-h-screen bg-black text-white font-sans'>
-            {/* Navigation */}
             <React.Suspense fallback={<div className="h-20 bg-black/80" />}>
                 <Navbar />
             </React.Suspense>
 
-            {/* Main Content */}
             <div className='pt-24 pb-16'>
                 <div className='container mx-auto px-6'>
-                    {/* Back Button */}
                     <button
                         onClick={() => router.back()}
                         className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors group"
@@ -164,9 +158,7 @@ export default function ProductDetailPage() {
                         Back
                     </button>
 
-                    {/* Product Details */}
                     <div className='grid grid-cols-1 lg:grid-cols-2 gap-12'>
-                        {/* Image Section */}
                         <div className='space-y-4'>
                             <div className='relative aspect-auto rounded-3xl overflow-hidden bg-white/5 border border-white/10'>
                                 <img
@@ -177,19 +169,19 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        {/* Product Info Section */}
+
                         <div className='space-y-6'>
-                            {/* Category Badge */}
+
                             {product.Category && (
                                 <div className='inline-block px-4 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm'>
                                     {product.Category}
                                 </div>
                             )}
 
-                            {/* Product Name */}
+
                             <h1 className='text-2xl md:text-3xl font-bold text-white'>{product.name}</h1>
 
-                            {/* Rating */}
+
                             <div className='flex items-center gap-4'>
                                 <div className='flex items-center gap-2'>
                                     {[...Array(5)].map((_, i) => (
@@ -203,12 +195,12 @@ export default function ProductDetailPage() {
                                 <span className='text-gray-400'>{product.rating} / 5</span>
                             </div>
 
-                            {/* Price */}
+
                             <div className='flex items-baseline gap-4'>
                                 <span className='text-5xl font-bold text-violet-400'>₹{product.price}</span>
                             </div>
 
-                            {/* Description */}
+
                             {product.description && (
                                 <div className='space-y-2'>
                                     <h3 className='text-xl font-bold text-white'>Description</h3>
@@ -216,7 +208,7 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            {/* Quantity Selector */}
+
                             <div className='space-y-3'>
                                 <h3 className='text-lg font-bold text-white'>Quantity</h3>
                                 <div className='flex items-center gap-4'>
@@ -244,8 +236,7 @@ export default function ProductDetailPage() {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
-                            {/* Action Buttons */}
+
                             <div className='flex gap-4'>
                                 {isAddedToCart ? (
                                     <>
@@ -257,7 +248,7 @@ export default function ProductDetailPage() {
                                             Go to Cart
                                         </button>
                                         <button
-                                            onClick={() => setIsAddedToCart(false)} // Optional: allow adding more? Or just keep it as "Go to Cart"
+                                            onClick={() => setIsAddedToCart(false)} 
                                             className='px-4 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors'
                                             title="Add more"
                                         >
@@ -297,7 +288,6 @@ export default function ProductDetailPage() {
                                 </button>
                             </div>
 
-                            {/* Features */}
                             <div className='grid grid-cols-3 gap-4 pt-6 border-t border-white/10'>
                                 <div className='text-center space-y-2'>
                                     <div className='h-12 w-12 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto'>

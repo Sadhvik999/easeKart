@@ -37,7 +37,6 @@ router.get('/address', verifyToken, getAddresses);
 router.post('/address', verifyToken, addAddress);
 
 // Order routes
-// Order routes
 router.post('/order/checkout', verifyToken, createOrder);
 
 // Notification routes

@@ -18,13 +18,11 @@ app.use(cookieParser());
 
 app.use('/api', router);
 
-app.get('/getAllProducts', getAllProducts);
-
 app.get('/', (req, res) => {
   res.send('EaseCart Backend is running');
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error(err);
   res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
 });
@@ -40,15 +38,11 @@ async function main() {
   }
 }
 
-// connect once at startup and leave connection open for incoming requests
 main().catch((err) => console.error('Error during main execution:', err));
 
-// Only start listening when this file is run directly. This keeps the module
-// import-safe for serverless wrappers that `require` the app.
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 
 module.exports = app;

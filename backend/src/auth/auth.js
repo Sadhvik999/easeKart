@@ -10,7 +10,7 @@ async function signup(req, res, next) {
         if (!name) return res.status(400).json({ message: "Name required" });
         if (!email) return res.status(400).json({ message: "Email required" });
         if (!password) return res.status(400).json({ message: "Password required" });
-        const existing = await prisma.Users.findUnique({ where: { email } });
+        const existing = await prisma.users.findUnique({ where: { email } });
         if (existing) return res.status(400).json({ message: "User already exists" });
 
         const hash = await bcrypt.hash(password, 10);
@@ -38,7 +38,7 @@ async function login(req, res, next) {
         if (!loginmail) return res.status(400).json({ message: "Email required" });
         if (!loginPassword) return res.status(400).json({ message: "Password required" });
 
-        const user = await prisma.Users.findUnique({ where: { email: loginmail } });
+        const user = await prisma.users.findUnique({ where: { email: loginmail } });
         if (!user) return res.status(400).json({ message: "User not found" });
 
         const ok = await bcrypt.compare(loginPassword, user.password);
@@ -91,7 +91,7 @@ async function getProfile(req, res, next) {
         if (!cookie) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        const user = await prisma.Users.findUnique({
+        const user = await prisma.users.findUnique({
             where: { id: userId },
             select: {
                 id: true,
@@ -147,7 +147,7 @@ async function updateProfile(req, res, next) {
         if (email) dataToUpdate.email = email;
         if (phone) dataToUpdate.phone = phone;
 
-        const updatedUser = await prisma.Users.update({
+        const updatedUser = await prisma.users.update({
             where: { id: userId },
             data: dataToUpdate,
             select: { id: true, name: true, email: true, phone: true, accountType: true }

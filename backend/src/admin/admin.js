@@ -112,7 +112,6 @@ async function getUserDetails(req, res) {
                 phone: true,
                 accountType: true,
                 createdAt: true,
-                // For Customers: Fetch their orders
                 orders: {
                     include: {
                         items: {
@@ -124,7 +123,6 @@ async function getUserDetails(req, res) {
                     },
                     orderBy: { createdAt: 'desc' }
                 },
-                // For Sellers: Fetch their products and related sales
                 products: {
                     where: { isDeleted: false },
                     select: {
@@ -140,7 +138,7 @@ async function getUserDetails(req, res) {
                                         id: true,
                                         createdAt: true,
                                         status: true,
-                                        user: { select: { name: true, email: true } } // Buyer info
+                                        user: { select: { name: true, email: true } } 
                                     }
                                 }
                             },

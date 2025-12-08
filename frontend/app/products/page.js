@@ -22,7 +22,6 @@ function ProductsContent() {
     const [totalPages, setTotalPages] = useState(1);
     const [categoriesList, setCategoriesList] = useState(['all']);
 
-    // Fetch categories
     useEffect(() => {
         async function fetchCategories() {
             try {
@@ -66,12 +65,10 @@ function ProductsContent() {
         fetchProducts();
     }, [categoryParam, searchParam, page]);
 
-    // Reset page when category/search changes
     useEffect(() => {
         setPage(1);
     }, [categoryParam, searchParam]);
 
-    // Update selected category when URL param changes
     useEffect(() => {
         if (categoryParam) {
             setSelectedCategory(categoryParam);
@@ -101,13 +98,10 @@ function ProductsContent() {
 
     return (
         <div className='min-h-screen bg-black text-white font-sans'>
-            {/* Navigation */}
             <Navbar />
 
-            {/* Main Content */}
             <div className='pt-24 pb-16'>
                 <div className='container mx-auto px-6'>
-                    {/* Header */}
                     <div className='mb-12'>
                         <button
                             onClick={() => router.back()}
@@ -121,7 +115,6 @@ function ProductsContent() {
                         <p className='text-gray-400 text-lg'>Browse our complete collection of premium tech products</p>
                     </div>
 
-                    {/* Sort and Filter Bar */}
                     <div className='mb-8 flex items-center justify-between flex-wrap gap-4'>
                         <div className='flex items-center gap-3'>
                             {selectedCategory !== 'all' && (
@@ -146,7 +139,6 @@ function ProductsContent() {
                         </div>
 
                         <div className='flex items-center gap-3 flex-wrap'>
-                            {/* Category Filter */}
                             <div className='flex items-center gap-2'>
                                 <Filter size={18} className="text-gray-400" />
                                 <select
@@ -205,7 +197,6 @@ function ProductsContent() {
                                 ))}
                             </div>
 
-                            {/* Pagination */}
                             {totalPages > 1 && (
                                 <div className="flex flex-wrap justify-center mt-12 gap-2 items-center">
                                     <button
@@ -228,15 +219,10 @@ function ProductsContent() {
                                     <div className="flex gap-2">
                                         {(() => {
                                             const pages = [];
-                                            // Always show current page
-                                            // Show prev page if exists
                                             if (page > 1) pages.push(page - 1);
                                             pages.push(page);
-                                            // Show next page if exists
                                             if (page < totalPages) pages.push(page + 1);
-                                            // Show +2 if we are at start
                                             if (page === 1 && page + 2 <= totalPages) pages.push(page + 2);
-                                            // Show -2 if we are at end
                                             if (page === totalPages && page - 2 > 0) pages.unshift(page - 2);
 
                                             return pages.sort((a, b) => a - b).map((p) => (

@@ -74,7 +74,7 @@ export default function AdminPage() {
     const filteredData = data.filter(item => {
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
-        // Dynamic search based on active tab mostly checking name or related ID
+
         if (activeTab === 'orders') return item.id.toLowerCase().includes(term) || item.user?.email.toLowerCase().includes(term);
         if (activeTab === 'products') return item.name.toLowerCase().includes(term);
         return item.name?.toLowerCase().includes(term) || item.email?.toLowerCase().includes(term);
@@ -117,7 +117,7 @@ export default function AdminPage() {
                 </nav>
 
                 <button
-                    onClick={() => router.push('/api/logout')} // Assuming generic logout or handle proper logout function
+                    onClick={() => router.push('/api/logout')}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-500 transition-colors mt-auto"
                 >
                     <LogOut size={20} />
@@ -125,9 +125,9 @@ export default function AdminPage() {
                 </button>
             </aside>
 
-            {/* Main Content */}
+
             <main className="flex-1 ml-64 p-8">
-                {/* Header */}
+
                 <header className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold capitalize">{activeTab}</h1>
@@ -145,7 +145,7 @@ export default function AdminPage() {
                     </div>
                 </header>
 
-                {/* Content Table/List */}
+
                 <div className="bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
                     {loading ? (
                         <div className="p-12 text-center text-gray-400">Loading data...</div>
@@ -201,7 +201,7 @@ export default function AdminPage() {
                                         <React.Fragment key={idx}>
                                             <tr
                                                 onClick={() => {
-                                                    // Only navigate if it's a user row (Sellers/Customers)
+
                                                     if (activeTab === 'sellers' || activeTab === 'customers') {
                                                         router.push(`/admin/users/${item.id}`);
                                                     }
@@ -236,14 +236,7 @@ export default function AdminPage() {
                                                         <td className="px-6 py-4 text-center">
                                                             <button
                                                                 onClick={() => {
-                                                                    // Toggle expanded state logic could be added here if needed, 
-                                                                    // but for simplicity we rely on a separate expanded state or just show updated table structure.
-                                                                    // Since I need state for expansion, I will implement a sub-component or manage state here.
-                                                                    // For this edit, I'll inline the complexity or wrap in a small component if possible.
-                                                                    // Let's use a simpler approach: adding an 'isExpanded' property to local state is complex without redesign.
-                                                                    // Instead I will render orders IN THE TABLE if orders exist, or just valid counts.
-                                                                    // The requirement says "SHOW ORDER'S AND IN SELLER'S TAB IT SHOULD SHOW SELLED ITEMS"
-                                                                    // Let's render a summary and maybe a details row.
+                                                                   
                                                                 }}
                                                                 className="inline-block px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs hover:bg-blue-500/20"
                                                             >
@@ -270,7 +263,7 @@ export default function AdminPage() {
                                                     </>
                                                 )}
                                             </tr>
-                                            {/* Nested Row for Customers to show orders */}
+
                                             {activeTab === 'customers' && item.orders && item.orders.length > 0 && (
                                                 <tr>
                                                     <td colSpan="5" className="px-0 py-0">

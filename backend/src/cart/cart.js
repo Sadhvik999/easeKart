@@ -2,7 +2,7 @@ const { prisma } = require('../db/dbConfig');
 
 const addToCart = async (req, res) => {
     try {
-        const userId = req.user.id; // Assuming verifyToken middleware adds user to req
+        const userId = req.user.id;
         const { productId, quantity } = req.body;
 
         if (!productId || !quantity) {
@@ -13,7 +13,6 @@ const addToCart = async (req, res) => {
             return res.status(403).json({ message: "Sellers cannot add items to cart" });
         }
 
-        // Check if product exists
         const product = await prisma.products.findUnique({
             where: { id: productId }
         });
@@ -22,7 +21,6 @@ const addToCart = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        // Find or create cart for user
         let cart = await prisma.cart.findUnique({
             where: { userId: userId }
         });
@@ -33,7 +31,6 @@ const addToCart = async (req, res) => {
             });
         }
 
-        // Check if item already exists in cart
         const existingCartItem = await prisma.cartItem.findFirst({
             where: {
                 cartId: cart.id,
@@ -42,13 +39,11 @@ const addToCart = async (req, res) => {
         });
 
         if (existingCartItem) {
-            // Update quantity
             await prisma.cartItem.update({
                 where: { id: existingCartItem.id },
                 data: { quantity: existingCartItem.quantity + quantity }
             });
         } else {
-            // Create new cart item
             await prisma.cartItem.create({
                 data: {
                     cartId: cart.id,
@@ -79,7 +74,7 @@ const getCart = async (req, res) => {
                         product: true
                     },
                     orderBy: {
-                        productId: 'asc' // Order items consistently
+                        productId: 'asc'
                     }
                 }
             }
@@ -106,7 +101,6 @@ const updateCartItem = async (req, res) => {
             return res.status(400).json({ message: "Item ID and quantity are required" });
         }
 
-        // Verify the cart item belongs to the user's cart
         const cart = await prisma.cart.findUnique({
             where: { userId: userId }
         });

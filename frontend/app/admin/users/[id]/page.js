@@ -107,7 +107,7 @@ export default function AdminUserDetailsPage() {
                 </div>
             </div>
 
-            {/* List Section */}
+
             <div>
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                     {isCustomer ? <ShoppingBag className="text-blue-500" /> : <Package className="text-violet-500" />}
@@ -115,7 +115,7 @@ export default function AdminUserDetailsPage() {
                 </h2>
 
                 {isCustomer ? (
-                    // Customer Orders View
+
                     user.orders && user.orders.length > 0 ? (
                         <div className="space-y-4">
                             {user.orders.map((order) => (
@@ -154,7 +154,7 @@ export default function AdminUserDetailsPage() {
                                             ))}
                                         </div>
 
-                                        {/* Address & Payment Info */}
+
                                         <div className="flex flex-wrap gap-8 pt-4 border-t border-white/5">
                                             {order.address && (
                                                 <div className="text-sm text-gray-400">
@@ -181,8 +181,7 @@ export default function AdminUserDetailsPage() {
                         </div>
                     )
                 ) : (
-                    // Seller Sales View
-                    // Need to flatten products -> orderItems
+
                     (() => {
                         const allSales = [];
                         user.products?.forEach(p => {
@@ -193,7 +192,7 @@ export default function AdminUserDetailsPage() {
                                 });
                             });
                         });
-                        // Sort by date desc
+
                         allSales.sort((a, b) => new Date(b.order.createdAt) - new Date(a.order.createdAt));
 
                         if (allSales.length === 0) {

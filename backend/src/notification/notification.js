@@ -19,7 +19,6 @@ const markAsRead = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        // Verify ownership
         const notification = await prisma.notification.findUnique({
             where: { id: id }
         });

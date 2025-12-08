@@ -16,19 +16,16 @@ async function getAllProducts(req, res) {
     const limit = Math.min(100, parseInt(req.query.limit) || 10);
     const skip = (page - 1) * limit;
 
-    // Support new sortField/sortOrder or legacy sort param
     let orderBy = undefined;
     const { sortField, sortOrder } = req.query;
     const legacySort = req.query.sort;
 
     if (sortField && sortOrder) {
-      // Whitelist allowed sort fields
       const allowedFields = ['price', 'rating', 'createdAt', 'name'];
       if (allowedFields.includes(sortField)) {
         orderBy = { [sortField]: sortOrder === 'asc' ? 'asc' : 'desc' };
       }
     } else if (legacySort) {
-      // Fallback to old sort format
       orderBy = getSortOption(legacySort);
     }
 
@@ -153,7 +150,6 @@ async function searchProducts(req, res) {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // Support new sortField/sortOrder or legacy sort param
     let orderBy = undefined;
     const { sortField, sortOrder } = req.query;
     const legacySort = req.query.sort;
@@ -323,18 +319,14 @@ async function deleteProduct(req, res) {
     if (product.sellerId !== sellerId) {
       return res.status(403).json({ message: "Unauthorized: You can only delete your own products" });
     }
-    // Check for related records
     const cartRefs = await prisma.cartItem.count({ where: { productId: id } });
     const orderRefs = await prisma.orderItems.count({ where: { productId: id } });
 
-    // If product has been part of any orders, do NOT hard-delete (orders should stay consistent).
     if (orderRefs > 0) {
-      // Perform soft-delete instead and inform the client
       await prisma.products.update({ where: { id }, data: { isDeleted: true } });
       return res.status(200).json({ message: "Product marked deleted (soft-delete) because it has associated orders" });
     }
 
-    // If there are cart references, remove them first, then hard-delete the product
     if (cartRefs > 0) {
       await prisma.$transaction([
         prisma.cartItem.deleteMany({ where: { productId: id } }),

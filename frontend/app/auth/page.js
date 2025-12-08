@@ -24,10 +24,9 @@ export default function Auth() {
       try {
         const res = await fetch(`${url}/api/profile`, { credentials: 'include' });
         if (res.ok) {
-          router.push('/');  // Redirect to home if already logged in
+          router.push('/'); 
         }
       } catch (err) {
-        // If error or not logged in, just stay on auth page
       }
     };
     checkAuth();
@@ -95,23 +94,18 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Effects */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-500/20 blur-[150px] animate-pulse"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-500/20 blur-[150px] animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Auth Card */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <ShoppingCart size={32} className="text-violet-500" />
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500">easyCart</h1>
         </div>
 
-        {/* Card */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-          {/* Header */}
           <h2 className="text-3xl font-bold text-center mb-2">
             {isLogin ? "Welcome Back" : "Create Account"}
           </h2>
@@ -119,7 +113,6 @@ export default function Auth() {
             {isLogin ? "Sign in to continue shopping" : "Join us for the best deals"}
           </p>
 
-          {/* Toggle Buttons */}
           <div className="flex gap-2 mb-8 bg-white/5 p-1 rounded-full">
             <button
               onClick={() => setIsLogin(true)}
@@ -141,10 +134,8 @@ export default function Auth() {
             </button>
           </div>
 
-          {/* Forms */}
           {isLogin ? (
             <form onSubmit={handleLogin} className="space-y-5">
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                 <div className="relative">
@@ -160,7 +151,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                 <div className="relative">
@@ -186,7 +176,6 @@ export default function Auth() {
                 </button>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -197,7 +186,6 @@ export default function Auth() {
             </form>
           ) : (
             <form onSubmit={handleSignup} className="space-y-5">
-              {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
                 <div className="relative">
@@ -213,7 +201,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                 <div className="relative">
@@ -229,7 +216,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                 <div className="relative">
@@ -245,7 +231,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                 <div className="relative">
@@ -268,7 +253,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
                 <div className="relative">
@@ -291,7 +275,6 @@ export default function Auth() {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -302,8 +285,6 @@ export default function Auth() {
             </form>
           )}
 
-          {/* Footer */}
-          {/* Footer */}
           <div className="mt-6 text-center space-y-4">
             <p className="text-gray-400 text-sm">
               Want to sell on easyCart?{" "}
